@@ -5,8 +5,11 @@ const generate = () => {
   return (
     <Layout title="パーツを生成">
       <Link className="btn" to="/Assemble">
-        パーツを生成
+      組み立てる
       </Link>
+      <div className="box">
+        
+      </div>
     </Layout>
   );
 };

@@ -112,7 +112,7 @@ function App() {
   return (
     <Layout title="組み立てる">
       <Link className="btn" to="/">
-        組み立てる
+        パーツを生成
       </Link>
       <div className="wrap" style={{ display: "flex" }}>
         <DndContext
@@ -120,7 +120,7 @@ function App() {
           onDragEnd={handleDragEnd}
           sensors={[sensors]}
         >
-          <div className="box01">
+          <div className="box box01">
             <SortableContext id="box01" items={box01Items}>
               {box01Items.map((id) => (
                 <SortableItem key={id} id={id}>
@@ -130,7 +130,7 @@ function App() {
             </SortableContext>
           </div>
 
-          <div className="box02">
+          <div className="box box02">
             <SortableContext id="box02" items={box02Items}>
               {box02Items.map((id) => (
                 <SortableItem key={id} id={id}>
