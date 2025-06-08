@@ -1,80 +1,61 @@
 import { useState } from "react";
-import PartItem from "../components/PartItem";
-import PartEditor from "../components/PartEditor";
 import Layout from "../layout/Layout";
-import { useParts } from "../components/hooks/supabase";
+import { useFrameTemplates } from "../components/hooks/useFrameTemplates";
 import { Link } from "react-router-dom";
 
 export default function GenerateView() {
-  const { parts, addPart, updatePart, deletePart, loading, error } = useParts();
-  const [newName, setNewName] = useState("");
-  const [newFrame, setNewFrame] = useState("");
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [editingContent, setEditingContent] = useState("");
-  const [editingFrame, setEditingFrame] = useState("");
+  const { templates, addTemplate, updateTemplate, deleteTemplate } =
+    useFrameTemplates();
 
-  const startEdit = (id: number, content: string, frame: string) => {
-    setEditingId(id);
-    setEditingContent(content || "");
-    setEditingFrame(frame);
-  };
+  const [name, setName] = useState("");
+  const [frame, setFrame] = useState("");
+  const [editId, setEditId] = useState<number | null>(null);
 
   return (
-    <Layout title="フレームを作る">
+    <Layout title="テンプレート作成">
       <Link className="btn" to="/">
         組み立てるボタン
       </Link>
-      {/* フレームを作成して保存する */}
-      <div>
-        <input
-          value={newName}
-          onChange={(e) => setNewName(e.target.value)}
-          placeholder="パーツ名"
-        />
-        <textarea
-          value={newFrame}
-          onChange={(e) => setNewFrame(e.target.value)}
-          placeholder="HTMLテンプレート"
-        />
-        <button
-          onClick={() => {
-            addPart(newName, newFrame);
-            setNewName("");
-            setNewFrame("");
-          }}
-        >
-          保存
-        </button>
-      </div>
+      <h2>新規テンプレート</h2>
+      <input
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        placeholder="名前"
+      />
+      <textarea
+        value={frame}
+        onChange={(e) => setFrame(e.target.value)}
+        placeholder="フレームHTML"
+      />
+      <button
+        onClick={() => {
+          if (editId === null) addTemplate(name, frame);
+          else updateTemplate(editId, name, frame);
+          setName("");
+          setFrame("");
+          setEditId(null);
+        }}
+      >
+        {editId === null ? "追加" : "更新"}
+      </button>
 
-      {loading && <p>Loading...</p>}
-      {error && <p>{error}</p>}
-
-      {/* パーツの名前とフレームを表示 */}
-      {parts.map((part: any) => (
-        <PartItem
-          key={part.id}
-          part={part}
-          onEdit={() => startEdit(part.id, part.content ?? "", part.frame)}
-          onDelete={() => deletePart(part.id)}
-        />
+      <h3>テンプレート一覧</h3>
+      {templates.map((tpl) => (
+        <div key={tpl.id}>
+          <strong>{tpl.name}</strong>
+          <pre>{tpl.frame}</pre>
+          <button
+            onClick={() => {
+              setEditId(tpl.id);
+              setName(tpl.name);
+              setFrame(tpl.frame);
+            }}
+          >
+            編集
+          </button>
+          <button onClick={() => deleteTemplate(tpl.id)}>削除</button>
+        </div>
       ))}
-
-      {/* フレームと中身を編集する */}
-      {editingId !== null && (
-        <PartEditor
-          name={parts.find((p: any) => p.id === editingId)?.name || ""}
-          content={editingContent}
-          frame={editingFrame}
-          onChangeContent={setEditingContent}
-          onChangeFrame={setEditingFrame}
-          onSave={() => {
-            updatePart(editingId, editingContent, editingFrame);
-            setEditingId(null);
-          }}
-          onCancel={() => setEditingId(null)}
-        />
-      )}
     </Layout>
   );
 }

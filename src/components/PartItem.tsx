@@ -1,32 +1,5 @@
-//パーツの名前とフレームを表示
+import { insertContentToDeepestElement } from "../lib/insertContentToDeepestElement";
 import type { Part } from "../types/Part";
-
-// フレームの最も深い要素にコンテンツを挿入する関数
-function insertContentToDeepestElement(
-    frame: string,
-    content: string | null
-  ): string {
-  
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(frame, "text/html");
-    const root = doc.body.firstElementChild;
-  
-    const findDeepest = (node: Element): Element => {
-      const firstChild = Array.from(node.children).find(
-        (child) => child.nodeType === Node.ELEMENT_NODE
-      );
-
-      return firstChild ? findDeepest(firstChild) : node;
-    };
-  
-    if (root) {
-      const target = findDeepest(root);
-      target.innerHTML = content || "";
-      return root.outerHTML;
-    }
-  
-    return frame;
-  }
 
 type Props = {
   part: Part;
@@ -37,18 +10,32 @@ type Props = {
 export default function PartItem({ part, onEdit, onDelete }: Props) {
   return (
     <div>
-      <div>{part.name}</div>
-      {part.frame && (
-        <div
-          dangerouslySetInnerHTML={{
-            __html: insertContentToDeepestElement(part.frame, part.content),
-          }}
-        />
-      )}
-      <div>
-        <button onClick={onEdit}>編集</button>
-        <button onClick={onDelete}>削除</button>
-      </div>
+      <h3>{part.name}</h3>
+      <pre>{part.frame}</pre>
+      <div
+        dangerouslySetInnerHTML={{
+          __html: insertContentToDeepestElement(part.frame, part.content),
+        }}
+      />
+
+      <pre
+        style={{ background: "#f8f8f8", padding: "1rem", overflowX: "auto" }}
+      >
+        {part.frame}
+      </pre>
+
+      {/* 実際のHTMLを描画 */}
+      <h4>HTMLレンダリング結果</h4>
+      <div
+        style={{
+          border: "1px dashed gray",
+          padding: "1rem",
+          marginBottom: "1rem",
+        }}
+        dangerouslySetInnerHTML={{ __html: part.frame }}
+      />
+      <button onClick={onEdit}>編集</button>
+      <button onClick={onDelete}>削除</button>
     </div>
   );
 }
