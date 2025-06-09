@@ -1,6 +1,6 @@
 export interface Part {
   id: number;
   name: string;
-  frame: string;
+  part: string;
   content: string | null;
 }

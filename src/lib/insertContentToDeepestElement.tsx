@@ -1,9 +1,9 @@
 export function insertContentToDeepestElement(
-  frame: string,
+  part: string,
   content: string | null
 ): string {
   const parser = new DOMParser();
-  const doc = parser.parseFromString(frame, "text/html");
+  const doc = parser.parseFromString(part, "text/html");
   const root = doc.body.firstElementChild;
 
   const findDeepest = (node: Element): Element => {
@@ -18,5 +18,5 @@ export function insertContentToDeepestElement(
     target.innerHTML = content || "";
     return root.outerHTML;
   }
-  return frame;
+  return part;
 }

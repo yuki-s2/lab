@@ -13,22 +13,56 @@ export function useParts() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchParts = async () => {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from("parts")
-        .select("id, name, content, frame");
-        
-        if (error) {
-          setError(error.message);
-        } else if (data) {
-          setParts(data as Part[]); 
-        }
-        setLoading(false);
-    };
+  const fetchParts = async () => {
+    setLoading(true);
+    const { data, error: fetchError } = await supabase
+      .from("parts")
+      .select("id, name, content, part");
 
+    if (fetchError) {
+      setError(fetchError.message);
+    } else if (data) {
+      setParts(data as Part[]);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    //初回データをフェッチ
     fetchParts();
+
+    //リアルタイムリスナーを設定
+    const channel = supabase
+      .channel("parts_changes") // 任意のユニークなチャンネル名
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "parts" }, // 'parts'テーブルの全てのイベントを購読
+        (payload) => {
+          console.log("Change received!", payload);
+          // イベントの種類に応じてステートを更新
+          if (payload.eventType === "INSERT") {
+            setParts((prev) => [...prev, payload.new as Part]);
+          } else if (payload.eventType === "UPDATE") {
+            setParts((prev) =>
+              prev.map((part) =>
+                part.id === (payload.new as Part).id
+                  ? (payload.new as Part)
+                  : part
+              )
+            );
+          } else if (payload.eventType === "DELETE") {
+            setParts((prev) =>
+              prev.filter((part) => part.id !== (payload.old as Part).id)
+            );
+          }
+        }
+      )
+      .subscribe(); // 購読を開始
+
+    //クリーンアップ
+    return () => {
+      supabase.removeChannel(channel); // コンポーネントがアンマウントされたら購読を解除
+    };
   }, []);
 
   return {
@@ -37,26 +71,40 @@ export function useParts() {
     error,
     addPart: async (
       name: string,
-      frame: string,
+      part: string,
       frameId: number,
       content: string
     ) => {
-      const processedFrame = insertContentToDeepestElement(frame, content);
-      const { error } = await supabase.from("parts").insert([
+      const processedPart = insertContentToDeepestElement(part, content);
+      const { error: insertError } = await supabase.from("parts").insert([
         {
           name: name.trim(),
-          frame: processedFrame,
+          part: processedPart,
           frame_id: frameId,
           content: content.trim() || null,
         },
       ]);
-      if (error) setError(error.message);
+      if (insertError) setError(insertError.message);
     },
     updatePart: async (id: number, name: string, content: string) => {
-      await supabase.from("parts").update({ name, content }).eq("id", id);
+      setError(null);
+      const { error: updateError } = await supabase
+        .from("parts")
+        .update({ name, content })
+        .eq("id", id);
+      if (updateError) {
+        setError(updateError.message);
+      }
     },
     deletePart: async (id: number) => {
-      await supabase.from("parts").delete().eq("id", id);
+      setError(null);
+      const { error: deleteError } = await supabase
+        .from("parts")
+        .delete()
+        .eq("id", id);
+      if (deleteError) {
+        setError(deleteError.message);
+      }
     },
   };
 }

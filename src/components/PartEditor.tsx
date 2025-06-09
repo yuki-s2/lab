@@ -3,10 +3,10 @@ type Props = {
   page?: "Assemble" | "Generate";
   name: string;
   content: string;
-  frame: string;
+  part: string;
   onChangeName: (v: string) => void;
   onChangeContent: (v: string) => void;
-  onChangeFrame: (v: string) => void;
+  onChangePart: (v: string) => void;
   onSave: () => void;
   onCancel: () => void;
 };
@@ -15,10 +15,10 @@ export default function PartEditor({
   page,
   name,
   content,
-  frame,
+  part,
   onChangeName,
   onChangeContent,
-  onChangeFrame,
+  onChangePart,
   onSave,
   onCancel,
 }: Props) {
@@ -31,8 +31,8 @@ export default function PartEditor({
           placeholder="パーツ名"
         />
       <textarea
-        value={frame}
-        onChange={(e) => onChangeFrame(e.target.value)}
+        value={part}
+        onChange={(e) => onChangePart(e.target.value)}
         placeholder="テンプレートHTMLを編集"
       />
       {page !== "Assemble" && (

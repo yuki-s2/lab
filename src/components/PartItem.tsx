@@ -11,17 +11,17 @@ export default function PartItem({ part, onEdit, onDelete }: Props) {
   return (
     <div>
       <h3>{part.name}</h3>
-      <pre>{part.frame}</pre>
+      <pre>{part.part}</pre>
       <div
         dangerouslySetInnerHTML={{
-          __html: insertContentToDeepestElement(part.frame, part.content),
+          __html: insertContentToDeepestElement(part.part, part.content),
         }}
       />
 
       <pre
         style={{ background: "#f8f8f8", padding: "1rem", overflowX: "auto" }}
       >
-        {part.frame}
+        {part.part}
       </pre>
 
       {/* 実際のHTMLを描画 */}
@@ -32,7 +32,7 @@ export default function PartItem({ part, onEdit, onDelete }: Props) {
           padding: "1rem",
           marginBottom: "1rem",
         }}
-        dangerouslySetInnerHTML={{ __html: part.frame }}
+        dangerouslySetInnerHTML={{ __html: part.part }}
       />
       <button onClick={onEdit}>編集</button>
       <button onClick={onDelete}>削除</button>
