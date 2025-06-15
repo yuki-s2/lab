@@ -18,22 +18,6 @@ export default function PartItem({ part, onEdit, onDelete }: Props) {
         }}
       />
 
-      <pre
-        style={{ background: "#f8f8f8", padding: "1rem", overflowX: "auto" }}
-      >
-        {part.part}
-      </pre>
-
-      {/* 実際のHTMLを描画 */}
-      <h4>HTMLレンダリング結果</h4>
-      <div
-        style={{
-          border: "1px dashed gray",
-          padding: "1rem",
-          marginBottom: "1rem",
-        }}
-        dangerouslySetInnerHTML={{ __html: part.part }}
-      />
       <button onClick={onEdit}>編集</button>
       <button onClick={onDelete}>削除</button>
     </div>
