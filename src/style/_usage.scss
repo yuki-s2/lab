@@ -1,0 +1,19 @@
+.bg-gray {
+    background: #f0efef;
+}
+
+
+
+@mixin flexCenter() {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@mixin shadow($type) {
+    @if $type == base {
+        box-shadow: -2px -2px 2px #dcdada;
+    } @else if $type == inset {
+        box-shadow: inset -2px -2px 2px #dcdada;
+    }
+}

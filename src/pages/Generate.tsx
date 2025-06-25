@@ -2,119 +2,116 @@ import { useState } from "react";
 import Layout from "../layout/Layout";
 import { useFrameTemplates } from "../components/hooks/useFrameTemplates";
 import { Link } from "react-router-dom";
-import { useParts } from "../components/hooks/useParts";
 
 export default function GenerateView() {
-  const { addPart } = useParts();
   const { templates, addTemplate, updateTemplate, deleteTemplate } =
     useFrameTemplates();
   const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(
     null
   );
-  const [name, setName] = useState("");
-  const [content, setContent] = useState("");
-  const [frame, setFrame] = useState("");
+  const [templateName, setTemplateName] = useState("");
+  const [templateFrame, setTemplateFrame] = useState(""); 
   const [editId, setEditId] = useState<number | null>(null);
 
+  //templates の中からクリックされたフレームのidを探す
   const selectedTemplate = templates.find(
     (tpl) => tpl.id === selectedTemplateId
   );
 
+  //テンプレート編集ボタンクリック時のハンドラ
+  const handleEditTemplate = (tpl: (typeof templates)[0]) => {
+    setEditId(tpl.id); 
+    setTemplateName(tpl.name);
+    setTemplateFrame(tpl.frame);
+    setSelectedTemplateId(tpl.id);
+  };
+
+  // テンプレート削除ボタンクリック時のハンドラ
+  const handleDeleteTemplate = (id: number) => {
+    deleteTemplate(id);
+    // 削除したテンプレートが選択中だった場合、選択を解除 フォームをリセット
+    if (selectedTemplateId === id) {
+      setSelectedTemplateId(null);
+      setTemplateName("");
+      setTemplateFrame("");
+      setEditId(null);
+    }
+  };
+
   return (
-    <Layout title="テンプレート作成">
+    <Layout title="フレームを作成する">
       <Link className="btn" to="/">
         組み立てるボタン
       </Link>
-      <h2>新規テンプレート</h2>
-      <div className="inputArea">
-        <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="名前"
-        />
-        <textarea
-          value={frame}
-          onChange={(e) => setFrame(e.target.value)}
-          placeholder="フレームHTML"
-        />
-      </div>
-      <button
-        onClick={() => {
-          if (editId === null) addTemplate(name, frame);
-          else updateTemplate(editId, name, frame);
-          setName("");
-          setFrame("");
-          setEditId(null);
-        }}
-      >
-        {editId === null ? "追加" : "更新"}
-      </button>
+      <div className="contentsWrap">
+        <div className="contents bg-gray">
+          <div className="inputArea">
+            {/* 編集・削除ボタンと入力フォームのエリア */}
+            <div className="inputArea">
+              {selectedTemplate && (
+                <>
+                  <div className="frameList_btns">
+                    <button
+                      className="edit"
+                      onClick={() => handleEditTemplate(selectedTemplate)}
+                    >
+                      フレームを編集する
+                    </button>
+                    <button
+                      onClick={() => handleDeleteTemplate(selectedTemplate.id)}
+                    >
+                      フレームを削除する
+                    </button>
+                  </div>
+                  <p>選択中のフレームのコード</p>
+                  <pre>{selectedTemplate.frame}</pre>
+                </>
+              )}
 
-      <h3>テンプレート一覧</h3>
-      {templates.map((tpl) => (
-        <div key={tpl.id}>
-          <strong>{tpl.name}</strong>
-          <pre>{tpl.frame}</pre>
-          <button
-            onClick={() => {
-              setEditId(tpl.id);
-              setName(tpl.name);
-              setFrame(tpl.frame);
-            }}
-          >
-            編集
-          </button>
-          <button onClick={() => deleteTemplate(tpl.id)}>削除</button>
+              <p>フレームを生成する</p>
+              <textarea
+                className=""
+                value={templateFrame}
+                onChange={(e) => setTemplateFrame(e.target.value)}
+                placeholder="フレームHTML"
+              />
+              <p>フレームのタイトル</p>
+              <input
+                value={templateName}
+                onChange={(e) => setTemplateName(e.target.value)}
+                placeholder="名前"
+              />
+              <button
+                onClick={() => {
+                  if (editId === null) addTemplate(templateName, templateFrame);
+                  else updateTemplate(editId, templateName, templateFrame);
+                  setTemplateName("");
+                  setTemplateFrame("");
+                  setEditId(null);
+                }}
+              >
+                {editId === null ? "追加" : "更新"}
+              </button>
+            </div>
+          </div>
         </div>
-      ))}
 
-      <h3>テンプレートを選択</h3>
-      <ul>
-        {templates.map((tpl) => (
-          <li key={tpl.id}>
-            <button
-              onClick={() => setSelectedTemplateId(tpl.id)}
-              style={{
-                backgroundColor: tpl.id === selectedTemplateId ? "#cceeff" : "",
-                marginBottom: "4px",
-              }}
-            >
-              {/* これは複製元 */}
-              {tpl.name}
-              {tpl.frame}
-            </button>
-          </li>
-        ))}
-      </ul>
-
-      <div className="inputArea">
-        <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="パーツ名"
-        />
-        <textarea
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          placeholder="中身"
-        />
+        <div className="contents">
+          <div className="frameList">
+            {templates.map((tpl) => (
+              <button
+                className={`frameList_item ${
+                  tpl.id === selectedTemplateId ? "is-active" : ""
+                }`}
+                key={tpl.id}
+                onClick={() => handleEditTemplate(tpl)}
+              >
+                <div>{tpl.name}</div>
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
-      <button
-        onClick={() => {
-          if (selectedTemplate && name.trim()) {
-            addPart(
-              name.trim(),
-              selectedTemplate.frame,
-              selectedTemplate.id,
-              content.trim()
-            );
-            setName("");
-            setContent("");
-          }
-        }}
-      >
-        保存
-      </button>
     </Layout>
   );
 }

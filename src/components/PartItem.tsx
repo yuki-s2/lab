@@ -9,17 +9,21 @@ type Props = {
 
 export default function PartItem({ part, onEdit, onDelete }: Props) {
   return (
-    <div>
-      <h3>{part.name}</h3>
-      <pre>{part.part}</pre>
-      <div
-        dangerouslySetInnerHTML={{
-          __html: insertContentToDeepestElement(part.part, part.content),
-        }}
-      />
+    <div className="part">
+      {/* <h3>{part.name}</h3> */}
+      {/* <pre>{part.part}</pre> */}
+      <div className="preview">
+        <div
+          dangerouslySetInnerHTML={{
+            __html: insertContentToDeepestElement(part.part, part.content),
+          }}
+        />
+      </div>
 
-      <button onClick={onEdit}>編集</button>
-      <button onClick={onDelete}>削除</button>
+      <div className="partBtns">
+        <button onClick={onEdit}>|||</button>
+        <button onClick={onDelete}>×</button>
+      </div>
     </div>
   );
 }

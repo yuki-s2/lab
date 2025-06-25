@@ -8,6 +8,7 @@ const supabase = createClient(
 );
 
 export function useFrameTemplates() {
+  //フレームテンプレートのデータ
   const [templates, setTemplates] = useState<FrameTemplate[]>([]);
   const [error, setError] = useState<string | null>(null);
 

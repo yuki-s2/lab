@@ -3,4 +3,5 @@ export interface Part {
   name: string;
   part: string;
   content: string | null;
+  frame_id: number;
 }
