@@ -18,6 +18,19 @@ export default function GenerateView() {
     (tpl) => tpl.id === selectedTemplateId
   );
 
+  const handleTplChange = async () => { // 非同期処理を含む可能性があるので async を付ける
+    if (editId === null) {
+      await addTemplate(templateName, templateFrame); // await を追加
+    } else {
+      await updateTemplate(editId, templateName, templateFrame); // await を追加
+    }
+    setTemplateName("");
+    setTemplateFrame("");
+    setEditId(null);
+    setSelectedTemplateId(null); // 更新/追加後に選択状態も解除する (UIの整合性のため)
+  };
+
+
   //テンプレート編集ボタンクリック時のハンドラ
   const handleEditTemplate = (tpl: (typeof templates)[0]) => {
     setEditId(tpl.id); 
@@ -52,19 +65,11 @@ export default function GenerateView() {
                 <>
                   <div className="frameList_btns">
                     <button
-                      className="edit"
-                      onClick={() => handleEditTemplate(selectedTemplate)}
-                    >
-                      フレームを編集する
-                    </button>
-                    <button
                       onClick={() => handleDeleteTemplate(selectedTemplate.id)}
                     >
                       フレームを削除する
                     </button>
                   </div>
-                  <p>選択中のフレームのコード</p>
-                  <pre>{selectedTemplate.frame}</pre>
                 </>
               )}
 
@@ -82,13 +87,7 @@ export default function GenerateView() {
                 placeholder="名前"
               />
               <button
-                onClick={() => {
-                  if (editId === null) addTemplate(templateName, templateFrame);
-                  else updateTemplate(editId, templateName, templateFrame);
-                  setTemplateName("");
-                  setTemplateFrame("");
-                  setEditId(null);
-                }}
+                onClick={handleTplChange}
               >
                 {editId === null ? "追加" : "更新"}
               </button>

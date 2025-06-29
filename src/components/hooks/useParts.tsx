@@ -17,7 +17,7 @@ export function useParts() {
     setLoading(true);
     const { data, error: fetchError } = await supabase
       .from("parts")
-      .select("id, name, content, part");
+      .select("id, name, content, part, frame_id");
 
     if (fetchError) {
       setError(fetchError.message);
@@ -38,7 +38,6 @@ export function useParts() {
         "postgres_changes",
         { event: "*", schema: "public", table: "parts" }, // 'parts'テーブルの全てのイベントを購読
         (payload) => {
-          console.log("Change received!", payload);
           // イベントの種類に応じてステートを更新
           if (payload.eventType === "INSERT") {
             setParts((prev) => [...prev, payload.new as Part]);
