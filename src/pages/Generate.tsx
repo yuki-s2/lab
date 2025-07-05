@@ -10,7 +10,7 @@ export default function GenerateView() {
     null
   );
   const [templateName, setTemplateName] = useState("");
-  const [templateFrame, setTemplateFrame] = useState(""); 
+  const [templateFrame, setTemplateFrame] = useState("");
   const [editId, setEditId] = useState<number | null>(null);
 
   //templates の中からクリックされたフレームのidを探す
@@ -18,22 +18,24 @@ export default function GenerateView() {
     (tpl) => tpl.id === selectedTemplateId
   );
 
-  const handleTplChange = async () => { // 非同期処理を含む可能性があるので async を付ける
+  const handleTplChange = async () => {
+    if (!templateName.trim() || !templateFrame.trim()) {
+      return;
+    }
     if (editId === null) {
-      await addTemplate(templateName, templateFrame); // await を追加
+      await addTemplate(templateName, templateFrame);
     } else {
-      await updateTemplate(editId, templateName, templateFrame); // await を追加
+      await updateTemplate(editId, templateName, templateFrame);
     }
     setTemplateName("");
     setTemplateFrame("");
     setEditId(null);
-    setSelectedTemplateId(null); // 更新/追加後に選択状態も解除する (UIの整合性のため)
+    setSelectedTemplateId(null);
   };
-
 
   //テンプレート編集ボタンクリック時のハンドラ
   const handleEditTemplate = (tpl: (typeof templates)[0]) => {
-    setEditId(tpl.id); 
+    setEditId(tpl.id);
     setTemplateName(tpl.name);
     setTemplateFrame(tpl.frame);
     setSelectedTemplateId(tpl.id);
@@ -53,11 +55,11 @@ export default function GenerateView() {
 
   return (
     <Layout title="フレームを作成する">
-      <Link className="btn" to="/">
-        組み立てるボタン
+      <Link className="linkBtn" to="/">
+        ← 組み立てるボタン
       </Link>
       <div className="contentsWrap">
-        <div className="contents bg-gray">
+        <div className="contents is-works bg-gray">
           <div className="inputArea">
             {/* 編集・削除ボタンと入力フォームのエリア */}
             <div className="inputArea">
@@ -73,24 +75,28 @@ export default function GenerateView() {
                 </>
               )}
 
-              <p>フレームを生成する</p>
-              <textarea
-                className=""
-                value={templateFrame}
-                onChange={(e) => setTemplateFrame(e.target.value)}
-                placeholder="フレームHTML"
-              />
-              <p>フレームのタイトル</p>
-              <input
-                value={templateName}
-                onChange={(e) => setTemplateName(e.target.value)}
-                placeholder="名前"
-              />
-              <button
-                onClick={handleTplChange}
-              >
+              <div className="input_item">
+                <div className="title">フレームを生成する</div>
+                <textarea
+                  className=""
+                  value={templateFrame}
+                  onChange={(e) => setTemplateFrame(e.target.value)}
+                  placeholder="<p></p>"
+                />
+              </div>
+              <div className="input_item">
+                <div className="title">フレームのタイトル</div>
+                <input
+                  value={templateName}
+                  onChange={(e) => setTemplateName(e.target.value)}
+                  placeholder="名前"
+                />
+              </div>
+              <div className="inputBtn_wrap">
+              <button className="inputBtn" onClick={handleTplChange}>
                 {editId === null ? "追加" : "更新"}
               </button>
+              </div>
             </div>
           </div>
         </div>

@@ -1,13 +1,13 @@
 @use "../style/usage" as *;
 
 body {
-  font-size: 20px;
+  font-size: 14px;
   color: #333;
   font-family:
-  -apple-system, BlinkMacSystemFont,
-  "Segoe UI", Roboto, "Helvetica Neue", Arial,
-  "Hiragino Sans", "ヒラギノ角ゴ ProN", "Noto Sans JP", "YuGothic", "游ゴシック体",
-  sans-serif;
+    -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial,
+    "Hiragino Sans", "ヒラギノ角ゴ ProN", "Noto Sans JP", "YuGothic", "游ゴシック体",
+    sans-serif;
 }
 
 .inner {
@@ -22,13 +22,37 @@ textarea {
 .contentsWrap {
   display: grid;
   grid-template-columns: 5fr 2fr;
+  gap: .5rem;
 }
 
 .contents {
-  margin: .5rem;
   padding: 1rem;
+
+  &.is-works {
+    border: .05rem solid #a6a5a5;
+    border-radius: .5rem;
+  }
+}
+
+.inputBtn_wrap {
+  margin-top: 2rem;
+  display: flex;
+  justify-content: center;
+}
+
+.inputBtn {
+  @include shadow(inset);
+  display: inline-block;
+  padding: .2rem 1rem;
+  border-radius: .2rem;
   border: .05rem solid #a6a5a5;
-  border-radius: .5rem;
+  background: #fff;
+}
+
+.linkBtn {
+  font-size: .7rem;
+  color: #686767;
+  margin-bottom: 1rem;
 }
 
 /*------------------------ partsList -------------------- */
@@ -60,15 +84,33 @@ textarea {
 .inputArea {
   display: flex;
   flex-direction: column;
-
-  input,
-  textarea {
-    border: none;
-    padding: Í10px 20px;
-    border-radius: .5rem;
-  }
 }
 
+.input_item {
+  display: block;
+
+  textarea,
+  input {
+    margin-top: .5rem;
+    border: none;
+    padding: 10px 20px;
+    border-radius: .5rem;
+    width: 100%;
+  }
+
+  .title {
+    font-size: .8em;
+    color: #686767;
+    border-bottom: .05rem solid #74a8c4;
+    line-height: 1.3rem;
+    display: inline-block;
+    text-shadow: rgb(196, 195, 195) 1px 1px;
+  }
+
+  &+.input_item {
+    margin-top: 2rem;
+  }
+}
 
 /*------------------------ frameList -------------------- */
 .frameList_item {
@@ -81,6 +123,7 @@ textarea {
   border: .05rem solid #a6a5a5;
   border-radius: 2rem;
   background: #fff;
+
   &::before {
     @include shadow(base);
     position: absolute;
@@ -101,23 +144,46 @@ textarea {
     }
   }
 
-  & + .frameList_item {
+  &+.frameList_item {
     margin-top: 1rem;
   }
 }
 
-// .frameList_btns {
-//   @include flexCenter();
-//   position: absolute;
-//   top: 0;
-//   right: 0;
-//   gap: 1rem;
+select {
+  width: 100%;
+  padding: 1rem;
+  @include shadow(inset);
+  margin-bottom: .5rem;
 
-//   button {
-//     border: none;
-//     background: none;
-//     font-size: 1rem;
-//     line-height: 1.5rem;
-//     padding: 0;
-//   }
-// }
+  option {
+    &::checkmark {
+      display: none;
+    }
+
+    &:not(:last-child) {
+      .frameList_selectItem {
+        border-bottom: 1px solid #000;
+      }
+    }
+
+    .frameList_selectItem {
+      padding: 1em;
+      width: 100%;
+    }
+  }
+}
+
+select,
+::picker(select) {
+  appearance: base-select;
+  border-radius: .5rem;
+
+  &::picker-icon {
+    display: none;
+  }
+}
+
+.frameList_selectBtn {
+  padding: 1em;
+  color: #74a8c4;
+}

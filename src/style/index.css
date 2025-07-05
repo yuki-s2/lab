@@ -4,7 +4,7 @@
 }
 
 body {
-  font-size: 20px;
+  font-size: 14px;
   color: #333;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Hiragino Sans", "ヒラギノ角ゴ ProN", "Noto Sans JP", "YuGothic", "游ゴシック体", sans-serif;
 }
@@ -21,13 +21,36 @@ textarea {
 .contentsWrap {
   display: grid;
   grid-template-columns: 5fr 2fr;
+  gap: 0.5rem;
 }
 
 .contents {
-  margin: 0.5rem;
   padding: 1rem;
+}
+.contents.is-works {
   border: 0.05rem solid #a6a5a5;
   border-radius: 0.5rem;
+}
+
+.inputBtn_wrap {
+  margin-top: 2rem;
+  display: flex;
+  justify-content: center;
+}
+
+.inputBtn {
+  box-shadow: inset -2px -2px 2px #dcdada;
+  display: inline-block;
+  padding: 0.2rem 1rem;
+  border-radius: 0.2rem;
+  border: 0.05rem solid #a6a5a5;
+  background: #fff;
+}
+
+.linkBtn {
+  font-size: 0.7rem;
+  color: #686767;
+  margin-bottom: 1rem;
 }
 
 /*------------------------ partsList -------------------- */
@@ -57,11 +80,28 @@ textarea {
   display: flex;
   flex-direction: column;
 }
-.inputArea input,
-.inputArea textarea {
+
+.input_item {
+  display: block;
+}
+.input_item textarea,
+.input_item input {
+  margin-top: 0.5rem;
   border: none;
-  padding: Í10px 20px;
+  padding: 10px 20px;
   border-radius: 0.5rem;
+  width: 100%;
+}
+.input_item .title {
+  font-size: 0.8em;
+  color: #686767;
+  border-bottom: 0.05rem solid #74a8c4;
+  line-height: 1.3rem;
+  display: inline-block;
+  text-shadow: rgb(196, 195, 195) 1px 1px;
+}
+.input_item + .input_item {
+  margin-top: 2rem;
 }
 
 /*------------------------ frameList -------------------- */
@@ -96,4 +136,38 @@ textarea {
 }
 .frameList_item + .frameList_item {
   margin-top: 1rem;
+}
+
+select {
+  width: 100%;
+  padding: 1rem;
+  box-shadow: inset -2px -2px 2px #dcdada;
+  margin-bottom: 0.5rem;
+}
+select option::checkmark {
+  display: none;
+}
+select option:not(:last-child) .frameList_selectItem {
+  border-bottom: 1px solid #000;
+}
+select option .frameList_selectItem {
+  padding: 1em;
+  width: 100%;
+}
+
+select,
+::picker(select) {
+  -webkit-appearance: base-select;
+     -moz-appearance: base-select;
+          appearance: base-select;
+  border-radius: 0.5rem;
+}
+select::picker-icon,
+::picker(select)::picker-icon {
+  display: none;
+}
+
+.frameList_selectBtn {
+  padding: 1em;
+  color: #74a8c4;
 }/*# sourceMappingURL=index.css.map */

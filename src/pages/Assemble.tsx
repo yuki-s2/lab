@@ -41,34 +41,53 @@ export default function AssembleView() {
     setShowPartsModal(true);
   };
 
+  // ★プルダウンのonChangeハンドラ
+  const handleSelectChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedId = parseInt(event.target.value, 10); // valueは文字列なので数値に変換
+    const selectedTpl = templates.find((tpl) => tpl.id === selectedId);
+
+    if (selectedTpl) {
+      handleFrameClick(selectedTpl); // 見つかったテンプレートでモーダルを開く
+    } else {
+      // "選択してください" が選ばれた場合や、見つからなかった場合の処理
+      setSelectedFrameTemplateForModal(null);
+      setShowPartsModal(false);
+      setEditingPart(null);
+    }
+  };
+
   return (
     <Layout title="組み立てる">
-      <Link className="btn" to="/Generate">
-        フレームを作るボタン
+      <Link className="linkBtn" to="/Generate">
+        ← フレームを作るボタン
       </Link>
       {/* 例: モーダルで選択したフレームのHTMLを表示 */}
       {selectedFrameTemplateForModal && (
         <h3>選択中のフレーム: {selectedFrameTemplateForModal.name}</h3>
       )}
       <div className="contentsWrap">
-        <div className="contents" style={{ background: "#f8ffc0" }}></div>
-        <div className="contents" style={{ background: "#b1f6fa" }}>
+        <div className="contents is-works"></div>
+        <div className="contents">
+
+          {/* ★フレームリストをプルダウンに置き換え */}
           <div className="frameList">
-            {templates.map((tpl) => (
-              <button
-                className={`frameList_item ${
-                  tpl.id === selectedFrameTemplateForModal?.id
-                    ? "is-active"
-                    : ""
-                }`}
-                key={tpl.id}
-                onClick={() => handleFrameClick(tpl)} // クリックでモーダルを開く
-              >
-                <div>{tpl.name}</div>
-              </button>
-            ))}
+            <select
+              id="frame-select"
+              className="frameList_select"
+              value={selectedFrameTemplateForModal?.id || ""} // 選択中のIDを設定、未選択なら空文字列
+              onChange={handleSelectChange}
+            >
+              <option className="frameList_selectBtn" value="" disabled hidden>
+                フレームを選択してください
+              </option>
+              {templates.map((tpl) => (
+                <option key={tpl.id} value={tpl.id}>
+                  <div className="frameList_selectItem">{tpl.name}</div>
+                </option>
+              ))}
+            </select>
           </div>
-          {/* フレーム一覧 */}
+          {/* フレーム一覧ここまで */}
 
           {/* パーツ一覧 */}
           <div style={{ marginBottom: "20px" }}>
