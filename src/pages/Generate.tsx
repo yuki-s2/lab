@@ -56,7 +56,7 @@ export default function GenerateView() {
   return (
     <Layout title="フレームを作成する">
       <Link className="linkBtn" to="/">
-        ← 組み立てるボタン
+        ← 組み立てる
       </Link>
       <div className="contentsWrap">
         <div className="contents is-works bg-gray">
@@ -93,9 +93,9 @@ export default function GenerateView() {
                 />
               </div>
               <div className="inputBtn_wrap">
-              <button className="inputBtn" onClick={handleTplChange}>
-                {editId === null ? "追加" : "更新"}
-              </button>
+                <button className="inputBtn" onClick={handleTplChange}>
+                  {editId === null ? "追加" : "更新"}
+                </button>
               </div>
             </div>
           </div>

@@ -1,5 +1,8 @@
 @use "../style/usage" as *;
 
+$textShadow: rgb(196, 195, 195) 1px 1px;
+$rightGray: #a6a5a5;
+
 body {
   font-size: 14px;
   color: #333;
@@ -29,7 +32,7 @@ textarea {
   padding: 1rem;
 
   &.is-works {
-    border: .05rem solid #a6a5a5;
+    border: .05rem solid $rightGray;
     border-radius: .5rem;
   }
 }
@@ -41,23 +44,35 @@ textarea {
 }
 
 .inputBtn {
-  @include shadow(inset);
+  @include boxShadow(inset);
+  text-shadow: $textShadow;
   display: inline-block;
-  padding: .2rem 1rem;
+  padding: .3rem 1rem;
   border-radius: .2rem;
-  border: .05rem solid #a6a5a5;
+  border: .05rem solid $rightGray;
   background: #fff;
 }
 
 .linkBtn {
+  text-shadow: $textShadow;
   font-size: .7rem;
   color: #686767;
   margin-bottom: 1rem;
 }
 
 /*------------------------ partsList -------------------- */
+.contents.is-works .partBtns {
+  display: none;
+}
+
 .partsList_item {
-  border: 1px solid #333;
+  position: relative;
+  border: 1px solid $rightGray;
+  border-radius: .5rem;
+
+  &+.partsList_item {
+    margin-top: .5rem;
+  }
 
   .part {
     position: relative;
@@ -71,11 +86,29 @@ textarea {
     position: absolute;
     top: 0;
     right: 0;
+    display: flex;
+    gap: .3rem;
+    padding: .2rem .5rem;
+    pointer-events: none;
+  
+
 
     button {
-      border: solid 1px #333;
-      width: 2rem;
+      @include boxShadow(inset);
+      text-shadow: $textShadow;
+      border: solid 1px $rightGray;
+      width: 1.5rem;
       height: 1.5rem;
+      border-radius: .2rem;
+      background: rgba(151, 151, 151, 0.196);
+      pointer-events: auto; // ボタン自体はクリック可能に
+      
+      &.is-edit {
+        span {
+          display: inline-block;
+          transform: rotate(90deg);
+        }
+      }
     }
   }
 }
@@ -104,7 +137,7 @@ textarea {
     border-bottom: .05rem solid #74a8c4;
     line-height: 1.3rem;
     display: inline-block;
-    text-shadow: rgb(196, 195, 195) 1px 1px;
+    text-shadow: $textShadow;
   }
 
   &+.input_item {
@@ -115,17 +148,17 @@ textarea {
 /*------------------------ frameList -------------------- */
 .frameList_item {
   @include flexCenter();
-  @include shadow(inset);
+  @include boxShadow(inset);
   font-size: .9rem;
   width: 100%;
   position: relative;
   min-height: 3rem;
-  border: .05rem solid #a6a5a5;
+  border: .05rem solid $rightGray;
   border-radius: 2rem;
   background: #fff;
 
   &::before {
-    @include shadow(base);
+    @include boxShadow(base);
     position: absolute;
     content: "";
     top: 50%;
@@ -135,7 +168,7 @@ textarea {
     width: .9rem;
     height: .9rem;
     border-radius: 50%;
-    border: .05rem solid #a6a5a5;
+    border: .05rem solid $rightGray;
   }
 
   &.is-active {
@@ -152,8 +185,12 @@ textarea {
 select {
   width: 100%;
   padding: 1rem;
-  @include shadow(inset);
+  @include boxShadow(inset);
   margin-bottom: .5rem;
+  background: #979797;
+  text-shadow: $textShadow;
+  font-size: .8rem;
+  border: .02rem solid $rightGray;
 
   option {
     &::checkmark {
@@ -183,7 +220,42 @@ select,
   }
 }
 
-.frameList_selectBtn {
-  padding: 1em;
-  color: #74a8c4;
+/*------------------------ DnD Styles -------------------- */
+.drag-handle {
+  cursor: grab;
+  
+  &:active {
+    cursor: grabbing;
+  }
+}
+
+.droppableArea {
+  min-height: 200px;
+  border: 2px dashed $rightGray;
+  border-radius: .5rem;
+  padding: 1rem;
+  transition: all 0.2s ease;
+  
+  &.is-over {
+    border-color: #74a8c4;
+    background-color: rgba(116, 168, 196, 0.1);
+  }
+  
+  .drop-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100px;
+    color: $rightGray;
+    font-style: italic;
+  }
+}
+
+.drag-preview {
+  background: white;
+  border: 1px solid $rightGray;
+  border-radius: .5rem;
+  padding: .5rem 1rem;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
 }

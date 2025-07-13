@@ -39,23 +39,34 @@ textarea {
 }
 
 .inputBtn {
-  box-shadow: inset -2px -2px 2px #dcdada;
+  box-shadow: inset -2px -2px 0 #dcdada;
+  text-shadow: rgb(196, 195, 195) 1px 1px;
   display: inline-block;
-  padding: 0.2rem 1rem;
+  padding: 0.3rem 1rem;
   border-radius: 0.2rem;
   border: 0.05rem solid #a6a5a5;
   background: #fff;
 }
 
 .linkBtn {
+  text-shadow: rgb(196, 195, 195) 1px 1px;
   font-size: 0.7rem;
   color: #686767;
   margin-bottom: 1rem;
 }
 
 /*------------------------ partsList -------------------- */
+.contents.is-works .partBtns {
+  display: none;
+}
+
 .partsList_item {
-  border: 1px solid #333;
+  position: relative;
+  border: 1px solid #a6a5a5;
+  border-radius: 0.5rem;
+}
+.partsList_item + .partsList_item {
+  margin-top: 0.5rem;
 }
 .partsList_item .part {
   position: relative;
@@ -68,11 +79,24 @@ textarea {
   position: absolute;
   top: 0;
   right: 0;
+  display: flex;
+  gap: 0.3rem;
+  padding: 0.2rem 0.5rem;
+  pointer-events: none;
 }
 .partsList_item .partBtns button {
-  border: solid 1px #333;
-  width: 2rem;
+  box-shadow: inset -2px -2px 0 #dcdada;
+  text-shadow: rgb(196, 195, 195) 1px 1px;
+  border: solid 1px #a6a5a5;
+  width: 1.5rem;
   height: 1.5rem;
+  border-radius: 0.2rem;
+  background: rgba(151, 151, 151, 0.196);
+  pointer-events: auto;
+}
+.partsList_item .partBtns button.is-edit span {
+  display: inline-block;
+  transform: rotate(90deg);
 }
 
 /*------------------------ inputArea -------------------- */
@@ -109,7 +133,7 @@ textarea {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: inset -2px -2px 2px #dcdada;
+  box-shadow: inset -2px -2px 0 #dcdada;
   font-size: 0.9rem;
   width: 100%;
   position: relative;
@@ -141,8 +165,12 @@ textarea {
 select {
   width: 100%;
   padding: 1rem;
-  box-shadow: inset -2px -2px 2px #dcdada;
+  box-shadow: inset -2px -2px 0 #dcdada;
   margin-bottom: 0.5rem;
+  background: #979797;
+  text-shadow: rgb(196, 195, 195) 1px 1px;
+  font-size: 0.8rem;
+  border: 0.02rem solid #a6a5a5;
 }
 select option::checkmark {
   display: none;
@@ -167,7 +195,39 @@ select::picker-icon,
   display: none;
 }
 
-.frameList_selectBtn {
-  padding: 1em;
-  color: #74a8c4;
+/*------------------------ DnD Styles -------------------- */
+.drag-handle {
+  cursor: grab;
+}
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+.droppableArea {
+  min-height: 200px;
+  border: 2px dashed #a6a5a5;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  transition: all 0.2s ease;
+}
+.droppableArea.is-over {
+  border-color: #74a8c4;
+  background-color: rgba(116, 168, 196, 0.1);
+}
+.droppableArea .drop-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100px;
+  color: #a6a5a5;
+  font-style: italic;
+}
+
+.drag-preview {
+  background: white;
+  border: 1px solid #a6a5a5;
+  border-radius: 0.5rem;
+  padding: 0.5rem 1rem;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
 }/*# sourceMappingURL=index.css.map */
