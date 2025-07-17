@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Layout from "../layout/Layout";
 import { useParts } from "../components/hooks/useParts";
 import { Link } from "react-router-dom";
@@ -16,12 +16,7 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import {
-  DraggablePartItem,
-  SortablePartItem,
-  createHandleDragEnd,
-  type DroppedPart,
-} from "./Dnd";
+import { SortablePartItem } from "./Dnd";
 
 type UniqueIdentifier = string | number;
 
@@ -40,10 +35,12 @@ function DroppableArea({ children }: { children: React.ReactNode }) {
 
 export default function AssembleView() {
   const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
-  const [droppedParts, setDroppedParts] = useState<DroppedPart[]>([]);
+  const [localParts, setLocalParts] = useState<Part[]>([]);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   const { templates } = useFrameTemplates();
-  const { parts, addPart, updatePart, deletePart } = useParts();
+  const { parts, addPart, updatePart, deletePart, updatePartsOrder } =
+    useParts();
   //モーダルの開閉
   const [showPartsModal, setShowPartsModal] = useState(false);
   //モーダルに渡すフレーム情報
@@ -51,6 +48,55 @@ export default function AssembleView() {
     useState<FrameTemplate | null>(null);
   //編集するパーツ情報
   const [editingPart, setEditingPart] = useState<Part | null>(null);
+  //パーツ作成用の状態
+  const [newPartName, setNewPartName] = useState("");
+  const [newPartContent, setNewPartContent] = useState("");
+
+  // 初期読み込み時にローカル状態を同期
+  useEffect(() => {
+    setLocalParts(parts);
+  }, [parts]);
+
+  // 保存ボタンの処理（並び替えの結果を保存）
+  const handleSave = async () => {
+    // 並び替えの結果をデータベースに反映
+    const orderedParts = localParts.map((p, index) => ({
+      id: p.id,
+      order_index: index,
+    }));
+
+    await updatePartsOrder(orderedParts);
+    setHasUnsavedChanges(false);
+  };
+
+  // パーツ作成機能
+  const handleCreatePart = async () => {
+    if (
+      !newPartName.trim() ||
+      !newPartContent.trim() ||
+      !selectedFrameTemplateForModal
+    ) {
+      alert("パーツ名、コンテンツ、選択されたフレームが必要です");
+      return;
+    }
+
+    await addPart(
+      newPartName,
+      selectedFrameTemplateForModal.frame,
+      selectedFrameTemplateForModal.id,
+      newPartContent
+    );
+    setNewPartName("");
+    setNewPartContent("");
+    alert("パーツが作成されました！");
+  };
+
+  // パーツをワークエリアに追加
+  const handleAddPartToWork = async (part: Part) => {
+    // パーツは既にデータベースに保存されているので、
+    // useEffectで自動同期される
+    // 特に追加処理は不要
+  };
 
   // フレームリストのボタンクリック
   const handleFrameClick = (tpl: FrameTemplate) => {
@@ -94,45 +140,88 @@ export default function AssembleView() {
       <Link className="linkBtn" to="/Generate">
         ← フレームを作るボタン
       </Link>
+
+      {/* 保存ボタン */}
+      <div className="save-controls">
+        <button
+          onClick={handleSave}
+          disabled={!hasUnsavedChanges}
+          className={hasUnsavedChanges ? "save-btn unsaved" : "save-btn"}
+        >
+          {hasUnsavedChanges ? "保存する" : "保存済み"}
+        </button>
+      </div>
+
       {selectedFrameTemplateForModal && (
         <h3>選択中のフレーム: {selectedFrameTemplateForModal.name}</h3>
       )}
       <div className="contentsWrap">
         <DndContext
           collisionDetection={closestCenter}
-          onDragEnd={createHandleDragEnd(
-            parts,
-            droppedParts,
-            setDroppedParts,
-            setActiveId
-          )}
+          onDragEnd={(event) => {
+            const { active, over } = event;
+            if (!over) return;
+
+            const activeId = active.id.toString();
+            const overId = over.id.toString();
+
+            // パーツ同士での並び替え
+            if (activeId.startsWith("part-") && overId.startsWith("part-")) {
+              const activePartId = parseInt(activeId.replace("part-", ""));
+              const overPartId = parseInt(overId.replace("part-", ""));
+
+              if (activePartId !== overPartId) {
+                const oldIndex = localParts.findIndex(
+                  (p) => p.id === activePartId
+                );
+                const newIndex = localParts.findIndex(
+                  (p) => p.id === overPartId
+                );
+
+                if (oldIndex !== -1 && newIndex !== -1) {
+                  const newParts = [...localParts];
+                  const [movedPart] = newParts.splice(oldIndex, 1);
+                  newParts.splice(newIndex, 0, movedPart);
+                  setLocalParts(newParts);
+                  setHasUnsavedChanges(true);
+                }
+              }
+            }
+            setActiveId(null);
+          }}
           onDragStart={(event) => setActiveId(event.active.id.toString())}
         >
           <div className="contents is-works">
-            {/* 受け取る */}
             <SortableContext
-              items={droppedParts.map((p) => `dropped-${p.uid}`)}
+              items={localParts.map((p) => `part-${p.id}`)}
               strategy={verticalListSortingStrategy}
             >
-              <DroppableArea>
-                {droppedParts.length > 0 ? (
-                  droppedParts.map((part) => (
-                    <SortablePartItem
-                      key={part.uid}
-                      part={part}
-                      onEdit={() => handleEditPart(part)}
-                      onDelete={() => deletePart(part.id)}
-                    />
-                  ))
-                ) : (
-                  <div className="drop-placeholder">Drop here</div>
-                )}
-              </DroppableArea>
+              {localParts.length > 0 ? (
+                localParts.map((part) => (
+                  <SortablePartItem
+                    key={part.id}
+                    part={part}
+                    onEdit={() => handleEditPart(part)}
+                    onDelete={async () => {
+                      // データベースから削除
+                      await deletePart(part.id);
+
+                      // ローカル状態からも削除（useEffectで同期されるが、即座に反映するため）
+                      setLocalParts((prev) =>
+                        prev.filter((p) => p.id !== part.id)
+                      );
+                    }}
+                  />
+                ))
+              ) : (
+                <div className="drop-placeholder">
+                  パーツをドラッグして並べてください
+                </div>
+              )}
             </SortableContext>
-            {/* 受け取る */}
           </div>
           <div className="contents">
-            {/* ★フレームリストをプルダウンに置き換え */}
+            {/* フレーム一覧ここから */}
             <div className="frameList">
               <select
                 id="frame-select"
@@ -161,24 +250,42 @@ export default function AssembleView() {
             </div>
             {/* フレーム一覧ここまで */}
 
-            {/* パーツ一覧 */}
-            <div style={{ marginBottom: "20px" }}>
-              {parts.length === 0 ? (
-                <p>パーツはまだありません...</p>
-              ) : (
-                <div className="partsList">
-                  {parts.map((part) => (
-                    //dnd-kit の id は内部的に string 型を想定して使われている
-                    <DraggablePartItem
-                      key={part.id}
-                      part={part}
-                      onEdit={() => handleEditPart(part)}
-                      onDelete={() => deletePart(part.id)}
-                    />
-                  ))}
+            {/* パーツ作成セクション */}
+            {selectedFrameTemplateForModal && (
+              <div
+                className="inputArea"
+                style={{
+                  marginTop: "2rem",
+                  padding: "1rem",
+                  border: "1px solid #ccc",
+                  borderRadius: "0.5rem",
+                }}
+              >
+                <h3>パーツを作成</h3>
+                <div className="input_item">
+                  <div className="title">パーツ名</div>
+                  <input
+                    value={newPartName}
+                    onChange={(e) => setNewPartName(e.target.value)}
+                    placeholder="パーツ名を入力"
+                  />
                 </div>
-              )}
-            </div>
+                <div className="input_item">
+                  <div className="title">パーツコンテンツ</div>
+                  <textarea
+                    value={newPartContent}
+                    onChange={(e) => setNewPartContent(e.target.value)}
+                    placeholder="パーツの中身を入力してください"
+                    rows={3}
+                  />
+                </div>
+                <div className="inputBtn_wrap">
+                  <button className="inputBtn" onClick={handleCreatePart}>
+                    パーツを作成
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* PartsModal コンポーネント */}
             <PartsModal
@@ -188,6 +295,7 @@ export default function AssembleView() {
               addPart={addPart}
               updatePart={updatePart}
               editingPart={editingPart}
+              onPartCreated={handleAddPartToWork}
             />
           </div>
 
@@ -195,11 +303,7 @@ export default function AssembleView() {
           <DragOverlay>
             {activeId ? (
               <div className="drag-preview">
-                {
-                  parts
-                    .concat(droppedParts)
-                    .find((p) => `part-${p.id}` === activeId)?.name
-                }
+                {localParts.find((p) => `part-${p.id}` === activeId)?.name}
               </div>
             ) : null}
           </DragOverlay>

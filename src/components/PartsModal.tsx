@@ -13,9 +13,10 @@ interface PartsModalProps {
     frame: string,
     frameId: number,
     content: string
-  ) => Promise<void>;
+  ) => Promise<Part | null>;
   updatePart: (id: number, name: string, content: string) => Promise<void>;
   editingPart: Part | null;
+  onPartCreated?: (part: Part) => void;
 }
 
 const PartsModal: React.FC<PartsModalProps> = ({
@@ -25,18 +26,16 @@ const PartsModal: React.FC<PartsModalProps> = ({
   addPart,
   updatePart,
   editingPart,
+  onPartCreated,
 }) => {
   // モーダルが閉じていたら何もレンダリングしない
   if (!isOpen || !selectedFrameTemplate) return null;
 
   const [partName, setPartName] = useState("");
   const [partContent, setPartContent] = useState("");
-  const [curEditingPartId, setCurEditingPartId] = useState<
-    number | null
-  >(null);
+  const [curEditingPartId, setCurEditingPartId] = useState<number | null>(null);
   const [curEditingPartName, setCurEditingPartName] = useState("");
-  const [curEditingPartContent, setCurEditingPartContent] =
-    useState("");
+  const [curEditingPartContent, setCurEditingPartContent] = useState("");
 
   // モーダルが開かれたとき、またはeditingPartが変更されたときに、フォームの値をセット
   useEffect(() => {
@@ -60,12 +59,18 @@ const PartsModal: React.FC<PartsModalProps> = ({
   // パーツ追加
   const handleAddPart = async () => {
     if (selectedFrameTemplate && partName.trim()) {
-      addPart(
+      const createdPart = await addPart(
         partName.trim(),
         selectedFrameTemplate.frame,
         selectedFrameTemplate.id,
         partContent.trim()
       );
+
+      // パーツが正常に作成された場合、ワークエリアに追加
+      if (createdPart && onPartCreated) {
+        onPartCreated(createdPart);
+      }
+
       setPartName("");
       setPartContent("");
       setCurEditingPartId(null);

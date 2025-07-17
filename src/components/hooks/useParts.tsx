@@ -17,7 +17,8 @@ export function useParts() {
     setLoading(true);
     const { data, error: fetchError } = await supabase
       .from("parts")
-      .select("id, name, content, part, frame_id");
+      .select("*")
+      .order("order_index", { ascending: true });
 
     if (fetchError) {
       setError(fetchError.message);
@@ -33,10 +34,10 @@ export function useParts() {
 
     //リアルタイムリスナーを設定
     const channel = supabase
-      .channel("parts_changes") // 任意のユニークなチャンネル名
+      .channel("parts_changes")
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "parts" }, // 'parts'テーブルの全てのイベントを購読
+        { event: "*", schema: "public", table: "parts" },
         (payload) => {
           // イベントの種類に応じてステートを更新
           if (payload.eventType === "INSERT") {
@@ -56,11 +57,11 @@ export function useParts() {
           }
         }
       )
-      .subscribe(); // 購読を開始
+      .subscribe();
 
     //クリーンアップ
     return () => {
-      supabase.removeChannel(channel); // コンポーネントがアンマウントされたら購読を解除
+      supabase.removeChannel(channel);
     };
   }, []);
 
@@ -68,23 +69,45 @@ export function useParts() {
     parts,
     loading,
     error,
+
+    // パーツを追加
     addPart: async (
       name: string,
-      part: string,
+      frame: string,
       frameId: number,
       content: string
-    ) => {
-      const processedPart = insertContentToDeepestElement(part, content);
-      const { error: insertError } = await supabase.from("parts").insert([
-        {
-          name: name.trim(),
-          part: processedPart,
-          frame_id: frameId,
-          content: content.trim() || null,
-        },
-      ]);
-      if (insertError) setError(insertError.message);
+    ): Promise<Part | null> => {
+      const processedFrame = insertContentToDeepestElement(frame, content);
+      const maxOrderIndex =
+        parts.length > 0 ? Math.max(...parts.map((p) => p.order_index)) : -1;
+
+      const uid = `part-${Date.now()}-${Math.random()
+        .toString(36)
+        .substr(2, 9)}`;
+
+      const { data, error: insertError } = await supabase
+        .from("parts")
+        .insert([
+          {
+            name: name.trim(),
+            frame: processedFrame,
+            frame_id: frameId,
+            content: content.trim() || null,
+            order_index: maxOrderIndex + 1,
+            uid: uid,
+          },
+        ])
+        .select();
+
+      if (insertError) {
+        setError(insertError.message);
+        return null;
+      }
+
+      return (data?.[0] as Part) || null;
     },
+
+    // パーツを更新
     updatePart: async (id: number, name: string, content: string) => {
       setError(null);
       const { error: updateError } = await supabase
@@ -95,12 +118,46 @@ export function useParts() {
         setError(updateError.message);
       }
     },
+
+    // パーツを削除
     deletePart: async (id: number) => {
       setError(null);
       const { error: deleteError } = await supabase
         .from("parts")
         .delete()
         .eq("id", id);
+      if (deleteError) {
+        setError(deleteError.message);
+      }
+    },
+
+    // パーツの順番を更新
+    updatePartsOrder: async (
+      orderedParts: { id: number; order_index: number }[]
+    ) => {
+      setError(null);
+
+      for (const { id, order_index } of orderedParts) {
+        const { error: updateError } = await supabase
+          .from("parts")
+          .update({ order_index })
+          .eq("id", id);
+
+        if (updateError) {
+          setError(updateError.message);
+          break;
+        }
+      }
+    },
+
+    // 全パーツをクリア
+    clearParts: async () => {
+      setError(null);
+      const { error: deleteError } = await supabase
+        .from("parts")
+        .delete()
+        .neq("id", 0); // 全て削除
+
       if (deleteError) {
         setError(deleteError.message);
       }
