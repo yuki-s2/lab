@@ -10,33 +10,20 @@ import {
   DndContext,
   DragOverlay,
   closestCenter,
-  useDroppable,
 } from "@dnd-kit/core";
 import {
   SortableContext,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { SortablePartItem } from "./Dnd";
-
 type UniqueIdentifier = string | number;
-
-function DroppableArea({ children }: { children: React.ReactNode }) {
-  const { setNodeRef, isOver } = useDroppable({ id: "droppable-area" });
-
-  return (
-    <div
-      ref={setNodeRef}
-      className={`droppableArea ${isOver ? "is-over" : ""}`}
-    >
-      {children}
-    </div>
-  );
-}
 
 export default function AssembleView() {
   const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
   const [localParts, setLocalParts] = useState<Part[]>([]);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [viewMode, setViewMode] = useState<"parts" | "code">("parts");
+  const [generatedHtml, setGeneratedHtml] = useState("");
 
   const { templates } = useFrameTemplates();
   const { parts, addPart, updatePart, deletePart, updatePartsOrder } =
@@ -69,6 +56,33 @@ export default function AssembleView() {
     setHasUnsavedChanges(false);
   };
 
+  // HTMLコード生成機能
+  const generateHtmlCode = () => {
+    const htmlParts = localParts
+      .map((part) => {
+        // frameにcontentを挿入
+        if (part.content && part.content.trim()) {
+          return part.frame.replace(/{{content}}/g, part.content);
+        }
+        // contentが空の場合はそのままframeを返す
+        return part.frame;
+      })
+      .join("\n");
+
+    setGeneratedHtml(htmlParts);
+    setViewMode("code");
+  };
+
+  // クリップボードにコピー
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(generatedHtml);
+      alert("HTMLコードをクリップボードにコピーしました！");
+    } catch (error) {
+      alert("コピーに失敗しました");
+    }
+  };
+
   // パーツ作成機能
   const handleCreatePart = async () => {
     if (
@@ -89,13 +103,6 @@ export default function AssembleView() {
     setNewPartName("");
     setNewPartContent("");
     alert("パーツが作成されました！");
-  };
-
-  // パーツをワークエリアに追加
-  const handleAddPartToWork = async (part: Part) => {
-    // パーツは既にデータベースに保存されているので、
-    // useEffectで自動同期される
-    // 特に追加処理は不要
   };
 
   // フレームリストのボタンクリック
@@ -120,21 +127,6 @@ export default function AssembleView() {
     setShowPartsModal(true);
   };
 
-  // ★プルダウンのonChangeハンドラ
-  const handleSelectChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedId = parseInt(event.target.value, 10); // valueは文字列なので数値に変換
-    const selectedTpl = templates.find((tpl) => tpl.id === selectedId);
-
-    if (selectedTpl) {
-      handleFrameClick(selectedTpl); // 見つかったテンプレートでモーダルを開く
-    } else {
-      // "選択してください" が選ばれた場合や、見つからなかった場合の処理
-      setSelectedFrameTemplateForModal(null);
-      setShowPartsModal(false);
-      setEditingPart(null);
-    }
-  };
-
   return (
     <Layout title="組み立てる">
       <Link className="linkBtn" to="/Generate">
@@ -148,13 +140,23 @@ export default function AssembleView() {
           disabled={!hasUnsavedChanges}
           className={hasUnsavedChanges ? "save-btn unsaved" : "save-btn"}
         >
-          {hasUnsavedChanges ? "保存する" : "保存済み"}
+          {hasUnsavedChanges ? "save" : "saved"}
+        </button>
+        <button
+          onClick={() => {
+            if (viewMode === "parts") {
+              generateHtmlCode();
+            } else {
+              setViewMode("parts");
+            }
+          }}
+          disabled={localParts.length === 0}
+          className="export-btn"
+        >
+          {viewMode === "parts" ? "HTML" : "preview"}
         </button>
       </div>
 
-      {selectedFrameTemplateForModal && (
-        <h3>選択中のフレーム: {selectedFrameTemplateForModal.name}</h3>
-      )}
       <div className="contentsWrap">
         <DndContext
           collisionDetection={closestCenter}
@@ -192,61 +194,66 @@ export default function AssembleView() {
           onDragStart={(event) => setActiveId(event.active.id.toString())}
         >
           <div className="contents is-works">
-            <SortableContext
-              items={localParts.map((p) => `part-${p.id}`)}
-              strategy={verticalListSortingStrategy}
-            >
-              {localParts.length > 0 ? (
-                localParts.map((part) => (
-                  <SortablePartItem
-                    key={part.id}
-                    part={part}
-                    onEdit={() => handleEditPart(part)}
-                    onDelete={async () => {
-                      // データベースから削除
-                      await deletePart(part.id);
+            {viewMode === "parts" ? (
+              // 既存のパーツ表示（DnD機能付き）
+              <SortableContext
+                items={localParts.map((p) => `part-${p.id}`)}
+                strategy={verticalListSortingStrategy}
+              >
+                {/* パーツ一覧 */}
+                {localParts.length > 0 ? (
+                  localParts.map((part) => (
+                    <SortablePartItem
+                      key={part.id}
+                      part={part}
+                      onEdit={() => handleEditPart(part)}
+                      onDelete={async () => {
+                        // データベースから削除
+                        await deletePart(part.id);
 
-                      // ローカル状態からも削除（useEffectで同期されるが、即座に反映するため）
-                      setLocalParts((prev) =>
-                        prev.filter((p) => p.id !== part.id)
-                      );
-                    }}
-                  />
-                ))
-              ) : (
-                <div className="drop-placeholder">
-                  パーツをドラッグして並べてください
+                        // ローカル状態からも削除（useEffectで同期されるが、即座に反映するため）
+                        setLocalParts((prev) =>
+                          prev.filter((p) => p.id !== part.id)
+                        );
+                      }}
+                    />
+                  ))
+                ) : (
+                  <div className="drop-placeholder">
+                    パーツをドラッグして並べてください
+                  </div>
+                )}
+              </SortableContext>
+            ) : (
+              // HTMLコード表示
+              <div className="code-view">
+                <div className="code-header">
+                  <button className="copy-btn" onClick={copyToClipboard}>
+                    📋 copy
+                  </button>
                 </div>
-              )}
-            </SortableContext>
+                <pre className="code-display">
+                  <code>{generatedHtml}</code>
+                </pre>
+              </div>
+            )}
           </div>
           <div className="contents">
             {/* フレーム一覧ここから */}
             <div className="frameList">
-              <select
-                id="frame-select"
-                className="frameList_select"
-                value={selectedFrameTemplateForModal?.id || ""} // 選択中のIDを設定、未選択なら空文字列
-                onChange={handleSelectChange}
-              >
-                <option
-                  className="frameList_selectBtn"
-                  value=""
-                  disabled
-                  hidden
+              {templates.map((tpl) => (
+                <button
+                  className={`frameList_item ${
+                    selectedFrameTemplateForModal?.id === tpl.id
+                      ? "is-active"
+                      : ""
+                  }`}
+                  key={tpl.id}
+                  onClick={() => handleFrameClick(tpl)}
                 >
-                  フレームを選択してください
-                </option>
-                {templates.map((tpl) => (
-                  <option
-                    className="frameList_selectItem"
-                    key={tpl.id}
-                    value={tpl.id}
-                  >
-                    {tpl.name}
-                  </option>
-                ))}
-              </select>
+                  <div>{tpl.name}</div>
+                </button>
+              ))}
             </div>
             {/* フレーム一覧ここまで */}
 
@@ -295,7 +302,6 @@ export default function AssembleView() {
               addPart={addPart}
               updatePart={updatePart}
               editingPart={editingPart}
-              onPartCreated={handleAddPartToWork}
             />
           </div>
 

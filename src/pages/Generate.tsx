@@ -18,6 +18,13 @@ export default function GenerateView() {
     (tpl) => tpl.id === selectedTemplateId
   );
 
+  const handleTplAdd = () => {
+    setEditId(null);
+    setTemplateName("");
+    setTemplateFrame("");
+    setSelectedTemplateId(null);
+  };
+
   const handleTplChange = async () => {
     if (!templateName.trim() || !templateFrame.trim()) {
       return;
@@ -63,20 +70,19 @@ export default function GenerateView() {
           <div className="inputArea">
             {/* 編集・削除ボタンと入力フォームのエリア */}
             <div className="inputArea">
-              {selectedTemplate && (
-                <>
-                  <div className="frameList_btns">
-                    <button
-                      onClick={() => handleDeleteTemplate(selectedTemplate.id)}
-                    >
-                      フレームを削除する
-                    </button>
-                  </div>
-                </>
-              )}
+              <div className="frameList_btns">
+                <button onClick={handleTplAdd}>フレームを追加する</button>
+                {selectedTemplate && (
+                  <button
+                    onClick={() => handleDeleteTemplate(selectedTemplate.id)}
+                  >
+                    フレームを削除する
+                  </button>
+                )}
+              </div>
 
               <div className="input_item">
-                <div className="title">フレームを生成する</div>
+                <div className="title">フレーム</div>
                 <textarea
                   className=""
                   value={templateFrame}

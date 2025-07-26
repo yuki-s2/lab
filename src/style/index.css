@@ -59,7 +59,6 @@ textarea {
 .contents.is-works .partsList_item {
   border: none;
 }
-
 .partsList_item {
   position: relative;
   border: 1px solid #a6a5a5;
@@ -75,30 +74,55 @@ textarea {
   align-items: center;
   justify-content: center;
 }
-.partsList_item .partBtns {
-  position: absolute;
-  top: 0;
-  right: 0;
-  display: flex;
-  gap: 0.3rem;
-  padding: 0.2rem 0.5rem;
-  pointer-events: none;
-}
 .partsList_item .partBtns button {
-  box-shadow: inset -2px -2px 0 #dcdada;
-  text-shadow: rgb(196, 195, 195) 1px 1px;
-  border: solid 1px #a6a5a5;
-  width: 1.5rem;
-  height: 1.5rem;
-  border-radius: 0.2rem;
-  background: rgba(151, 151, 151, 0.196);
-  pointer-events: auto;
+  position: absolute;
+  right: -10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-in;
 }
 .partsList_item .partBtns button.is-edit span {
   display: inline-block;
   transform: rotate(90deg);
 }
 
+.partsList_item {
+  position: relative;
+}
+.partsList_item .edit-button-click {
+  transition: all 0.2s ease;
+}
+.partsList_item .edit-button-click:hover {
+  background-color: #45a049 !important;
+  transform: translateY(-50%) scale(1.1);
+}
+.partsList_item .edit-button-click:active {
+  transform: translateY(-50%) scale(0.95);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-50%) scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-50%) scale(1);
+  }
+}
 /*------------------------ inputArea -------------------- */
 .inputArea {
   display: flex;
@@ -261,4 +285,76 @@ select::picker-icon,
 .save-btn:not(.unsaved) {
   background-color: #4caf50;
   color: white;
+}
+
+.export-btn {
+  padding: 8px 16px;
+  margin-left: 10px;
+  background-color: #2196f3;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+.export-btn:hover:not(:disabled) {
+  background-color: #1976d2;
+}
+.export-btn:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+.export-btn.active {
+  background-color: #1976d2;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.code-view {
+  padding: 20px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.code-view .code-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.code-view .code-header h3 {
+  margin: 0;
+  font-size: 18px;
+  color: #333;
+}
+.code-view .code-header .copy-btn {
+  padding: 8px 16px;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+.code-view .code-header .copy-btn:hover {
+  background-color: #45a049;
+}
+.code-view .code-display {
+  flex: 1;
+  background-color: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 16px;
+  margin: 0;
+  font-family: "Courier New", monospace;
+  font-size: 14px;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow: auto;
+  min-height: 300px;
+}
+.code-view .code-display code {
+  background: none;
+  padding: 0;
+  font-size: inherit;
 }/*# sourceMappingURL=index.css.map */
