@@ -2,6 +2,10 @@ import { useState } from "react";
 import Layout from "../layout/Layout";
 import { useFrameTemplates } from "../components/hooks/useFrameTemplates";
 import { Link } from "react-router-dom";
+import {
+  formatHtmlCode,
+  handleTabKeyInTextarea,
+} from "../components/hooks/format";
 
 export default function GenerateView() {
   const { templates, addTemplate, updateTemplate, deleteTemplate } =
@@ -60,6 +64,17 @@ export default function GenerateView() {
     }
   };
 
+  // HTMLフォーマット関数
+  const formatHtml = () => {
+    const formatted = formatHtmlCode(templateFrame);
+    setTemplateFrame(formatted);
+  };
+
+  // テキストエリアでTabキーの処理
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    handleTabKeyInTextarea(e, templateFrame, setTemplateFrame);
+  };
+
   return (
     <Layout title="フレームを作成する">
       <Link className="linkBtn" to="/">
@@ -67,42 +82,60 @@ export default function GenerateView() {
       </Link>
       <div className="contentsWrap">
         <div className="contents is-works bg-gray">
-          <div className="inputArea">
-            {/* 編集・削除ボタンと入力フォームのエリア */}
-            <div className="inputArea">
-              <div className="frameList_btns">
-                <button onClick={handleTplAdd}>フレームを追加する</button>
-                {selectedTemplate && (
+          <div className="inputFlame">
+            <div className="inputFlame_btns">
+              <button
+                className={`btn ${!selectedTemplate && "is-active"}`}
+                onClick={handleTplAdd}
+              >
+                追加
+              </button>
+              {selectedTemplate && (
+                <>
+                  <div className="btn is-active">編集</div>
                   <button
+                    className="btn"
                     onClick={() => handleDeleteTemplate(selectedTemplate.id)}
                   >
-                    フレームを削除する
+                    削除
                   </button>
-                )}
-              </div>
+                </>
+              )}
+            </div>
 
-              <div className="input_item">
-                <div className="title">フレーム</div>
-                <textarea
-                  className=""
-                  value={templateFrame}
-                  onChange={(e) => setTemplateFrame(e.target.value)}
-                  placeholder="<p></p>"
-                />
-              </div>
-              <div className="input_item">
-                <div className="title">フレームのタイトル</div>
-                <input
-                  value={templateName}
-                  onChange={(e) => setTemplateName(e.target.value)}
-                  placeholder="名前"
-                />
-              </div>
-              <div className="inputBtn_wrap">
-                <button className="inputBtn" onClick={handleTplChange}>
-                  {editId === null ? "追加" : "更新"}
+            <div className="inputFlame_item">
+              <div className="titleWrap">
+                <div className="title">フレームのコード</div>
+                <button
+                  className="adjustButton"
+                  onClick={formatHtml}
+                  type="button"
+                  disabled={!templateFrame.trim()}
+                >
+                  コード整形
                 </button>
               </div>
+              <textarea
+                className="code-editor"
+                value={templateFrame}
+                onChange={(e) => setTemplateFrame(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="<p>ここにHTMLコードを入力...</p>"
+                spellCheck={false}
+              />
+            </div>
+            <div className="inputFlame_item">
+              <div className="title">フレームのタイトル</div>
+              <input
+                value={templateName}
+                onChange={(e) => setTemplateName(e.target.value)}
+                placeholder="名前"
+              />
+            </div>
+            <div className="inputBtn_wrap">
+              <button className="inputBtn" onClick={handleTplChange}>
+                {editId === null ? "追加" : "更新"}
+              </button>
             </div>
           </div>
         </div>

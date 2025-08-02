@@ -6,16 +6,12 @@ import { useFrameTemplates } from "../components/hooks/useFrameTemplates";
 import type { FrameTemplate } from "../types/FrameTemplate";
 import PartsModal from "../components/PartsModal";
 import type { Part } from "../types/Part";
-import {
-  DndContext,
-  DragOverlay,
-  closestCenter,
-} from "@dnd-kit/core";
+import { DndContext, DragOverlay, closestCenter } from "@dnd-kit/core";
 import {
   SortableContext,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { SortablePartItem } from "./Dnd";
+import { SortablePartItem } from "../components/Dnd";
 type UniqueIdentifier = string | number;
 
 export default function AssembleView() {
@@ -194,49 +190,109 @@ export default function AssembleView() {
           onDragStart={(event) => setActiveId(event.active.id.toString())}
         >
           <div className="contents is-works">
-            {viewMode === "parts" ? (
-              // 既存のパーツ表示（DnD機能付き）
-              <SortableContext
-                items={localParts.map((p) => `part-${p.id}`)}
-                strategy={verticalListSortingStrategy}
+            <div
+              style={
+                {
+                  fontFamily:
+                    "'Hiragino Sans', 'ヒラギノ角ゴ ProN', 'Meiryo', 'メイリオ', sans-serif",
+                  backgroundColor: "#fce7f3",
+                  margin: 0,
+                  padding: 0,
+                  WebkitTextSizeAdjust: "100%",
+                  textSizeAdjust: "100%",
+                } as any
+              }
+            >
+              <table
+                align="center"
+                border={0}
+                cellPadding="0"
+                cellSpacing="0"
+                width="100%"
+                style={
+                  {
+                    borderCollapse: "collapse",
+                    msoTableLspace: "0pt",
+                    msoTableRspace: "0pt",
+                    backgroundColor: "#fce7f3",
+                  } as any
+                }
               >
-                {/* パーツ一覧 */}
-                {localParts.length > 0 ? (
-                  localParts.map((part) => (
-                    <SortablePartItem
-                      key={part.id}
-                      part={part}
-                      onEdit={() => handleEditPart(part)}
-                      onDelete={async () => {
-                        // データベースから削除
-                        await deletePart(part.id);
+                <tr>
+                  <td align="center" style={{ padding: "20px 0" }}>
+                    <table
+                      align="center"
+                      border={0}
+                      cellPadding="0"
+                      cellSpacing="0"
+                      width="600"
+                      style={
+                        {
+                          borderCollapse: "collapse",
+                          msoTableLspace: "0pt",
+                          msoTableRspace: "0pt",
+                          backgroundColor: "#ffffff",
+                          borderRadius: "20px",
+                          overflow: "hidden",
+                          boxShadow: "0 4px 20px rgba(0, 0, 0, 0.08)",
+                        } as any
+                      }
+                    >
+                      <tr>
+                        <td align="center">
+                          {viewMode === "parts" ? (
+                            // 既存のパーツ表示（DnD機能付き）
+                            <SortableContext
+                              items={localParts.map((p) => `part-${p.id}`)}
+                              strategy={verticalListSortingStrategy}
+                            >
+                              {/* パーツ一覧 */}
+                              {localParts.length > 0 ? (
+                                localParts.map((part) => (
+                                  <SortablePartItem
+                                    key={part.id}
+                                    part={part}
+                                    onEdit={() => handleEditPart(part)}
+                                    onDelete={async () => {
+                                      // データベースから削除
+                                      await deletePart(part.id);
 
-                        // ローカル状態からも削除（useEffectで同期されるが、即座に反映するため）
-                        setLocalParts((prev) =>
-                          prev.filter((p) => p.id !== part.id)
-                        );
-                      }}
-                    />
-                  ))
-                ) : (
-                  <div className="drop-placeholder">
-                    パーツをドラッグして並べてください
-                  </div>
-                )}
-              </SortableContext>
-            ) : (
-              // HTMLコード表示
-              <div className="code-view">
-                <div className="code-header">
-                  <button className="copy-btn" onClick={copyToClipboard}>
-                    📋 copy
-                  </button>
-                </div>
-                <pre className="code-display">
-                  <code>{generatedHtml}</code>
-                </pre>
-              </div>
-            )}
+                                      // ローカル状態からも削除（useEffectで同期されるが、即座に反映するため）
+                                      setLocalParts((prev) =>
+                                        prev.filter((p) => p.id !== part.id)
+                                      );
+                                    }}
+                                  />
+                                ))
+                              ) : (
+                                <div className="drop-placeholder">
+                                  パーツをドラッグして並べてください
+                                </div>
+                              )}
+                            </SortableContext>
+                          ) : (
+                            // HTMLコード表示
+                            <div className="code-view">
+                              <div className="code-header">
+                                <button
+                                  className="copy-btn"
+                                  onClick={copyToClipboard}
+                                >
+                                  📋 copy
+                                </button>
+                              </div>
+                              <pre className="code-display">
+                                <code>{generatedHtml}</code>
+                              </pre>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </div>
           </div>
           <div className="contents">
             {/* フレーム一覧ここから */}
@@ -256,43 +312,6 @@ export default function AssembleView() {
               ))}
             </div>
             {/* フレーム一覧ここまで */}
-
-            {/* パーツ作成セクション */}
-            {selectedFrameTemplateForModal && (
-              <div
-                className="inputArea"
-                style={{
-                  marginTop: "2rem",
-                  padding: "1rem",
-                  border: "1px solid #ccc",
-                  borderRadius: "0.5rem",
-                }}
-              >
-                <h3>パーツを作成</h3>
-                <div className="input_item">
-                  <div className="title">パーツ名</div>
-                  <input
-                    value={newPartName}
-                    onChange={(e) => setNewPartName(e.target.value)}
-                    placeholder="パーツ名を入力"
-                  />
-                </div>
-                <div className="input_item">
-                  <div className="title">パーツコンテンツ</div>
-                  <textarea
-                    value={newPartContent}
-                    onChange={(e) => setNewPartContent(e.target.value)}
-                    placeholder="パーツの中身を入力してください"
-                    rows={3}
-                  />
-                </div>
-                <div className="inputBtn_wrap">
-                  <button className="inputBtn" onClick={handleCreatePart}>
-                    パーツを作成
-                  </button>
-                </div>
-              </div>
-            )}
 
             {/* PartsModal コンポーネント */}
             <PartsModal

@@ -2,7 +2,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import React, { useState, useEffect, useRef } from "react";
 import type { Part } from "../types/Part";
-import PartItem from "../components/PartItem";
+import PartItem from "./PartItem";
 
 export function SortablePartItem({
   part,
@@ -25,14 +25,21 @@ export function SortablePartItem({
   const [isHovered, setIsHovered] = useState(false);
   const elementRef = useRef<HTMLDivElement>(null);
   const editButtonRef = useRef<HTMLButtonElement>(null);
+  const deleteButtonRef = useRef<HTMLButtonElement>(null);
   const animationFrameRef = useRef<number | null>(null);
 
   const mousePositionRef = useRef({ x: 0, y: 0 });
 
-  const handleEditClick = (e: React.MouseEvent) => {
+  const handleEditPart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     onEdit?.();
+  };
+
+  const handleDeletePart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onDelete?.();
   };
 
   const handleMouseMove = (e: MouseEvent) => {
@@ -42,22 +49,32 @@ export function SortablePartItem({
   const checkMouseOutside = () => {
     const { x, y } = mousePositionRef.current;
     const el = elementRef.current;
-    const btn = editButtonRef.current;
+    const editBtn = editButtonRef.current;
+    const deleteBtn = deleteButtonRef.current;
 
     if (!el) return;
     const rect = el.getBoundingClientRect();
-    const btnRect = btn?.getBoundingClientRect();
+    const editBtnRect = editBtn?.getBoundingClientRect();
+    const deleteBtnRect = deleteBtn?.getBoundingClientRect();
 
     const insideEl =
       x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
-    const insideBtn = btnRect
-      ? x >= btnRect.left &&
-        x <= btnRect.right &&
-        y >= btnRect.top &&
-        y <= btnRect.bottom
+
+    const insideEditBtn = editBtnRect
+      ? x >= editBtnRect.left &&
+        x <= editBtnRect.right &&
+        y >= editBtnRect.top &&
+        y <= editBtnRect.bottom
       : false;
 
-    if (!insideEl && !insideBtn) {
+    const insideDeleteBtn = deleteBtnRect
+      ? x >= deleteBtnRect.left &&
+        x <= deleteBtnRect.right &&
+        y >= deleteBtnRect.top &&
+        y <= deleteBtnRect.bottom
+      : false;
+
+    if (!insideEl && !insideEditBtn && !insideDeleteBtn) {
       setIsHovered(false);
       cancelAnimationFrame(animationFrameRef.current!);
       document.removeEventListener("mousemove", handleMouseMove);
@@ -101,18 +118,18 @@ export function SortablePartItem({
           <button
             ref={editButtonRef}
             className="is-edit"
-            onClick={handleEditClick}
+            onClick={handleEditPart}
             title="編集"
           >
-            |||
+            <span>|||</span>
           </button>
           <button
-            ref={editButtonRef}
+            ref={deleteButtonRef}
             className="is-delete"
-            onClick={handleEditClick}
+            onClick={handleDeletePart}
             title="削除"
           >
-            ×
+            <span>×</span>
           </button>
         </div>
       )}

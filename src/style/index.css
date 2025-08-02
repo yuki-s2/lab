@@ -3,8 +3,13 @@
   background: #f0efef;
 }
 
+html {
+  font-size: 1.3333333333vw;
+  font-size: clamp(10px, 1.3333333333vw, 20px);
+}
+
 body {
-  font-size: 14px;
+  font-size: 0.875rem;
   color: #333;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Hiragino Sans", "ヒラギノ角ゴ ProN", "Noto Sans JP", "YuGothic", "游ゴシック体", sans-serif;
 }
@@ -42,10 +47,11 @@ textarea {
   box-shadow: inset -2px -2px 0 #dcdada;
   text-shadow: rgb(196, 195, 195) 1px 1px;
   display: inline-block;
-  padding: 0.3rem 1rem;
+  padding: 0.5rem 2rem;
   border-radius: 0.2rem;
   border: 0.05rem solid #a6a5a5;
   background: #fff;
+  letter-spacing: 0.2rem;
 }
 
 .linkBtn {
@@ -53,6 +59,70 @@ textarea {
   font-size: 0.7rem;
   color: #686767;
   margin-bottom: 1rem;
+}
+
+.adjustButton {
+  position: relative;
+  right: 0;
+  top: -1em;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.6em;
+  border: 0.05rem solid #a6a5a5;
+  border-radius: 0.3rem;
+  background: #f8f9fa;
+  color: #495057;
+  text-shadow: rgb(196, 195, 195) 1px 1px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.adjustButton::before {
+  content: "";
+  width: 1em;
+  height: 0.5em;
+  background: #a6a5a5;
+  -webkit-clip-path: polygon(0 0, 100% 0%, 50% 100%);
+          clip-path: polygon(0 0, 100% 0%, 50% 100%);
+  position: absolute;
+  bottom: -0.5em;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.adjustButton::after {
+  content: "";
+  width: 1em;
+  height: 0.5em;
+  background: #f8f9fa;
+  -webkit-clip-path: polygon(0 0, 100% 0%, 50% 100%);
+          clip-path: polygon(0 0, 100% 0%, 50% 100%);
+  position: absolute;
+  bottom: -0.4em;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.adjustButton:hover {
+  transform: translateY(1px);
+}
+.adjustButton:active {
+  transform: translateY(0);
+}
+
+.modal {
+  background: #fff;
+  border: 0.05rem solid #a6a5a5;
+  border-radius: 0.5rem;
+  width: 80%;
+  max-width: 700px;
+  max-height: 80%;
+  overflow-y: auto;
+}
+
+.modal_head {
+  background: #a6a5a5;
+  padding: 1rem;
+}
+
+.modal_contents {
+  padding: 0.5rem 1rem;
 }
 
 /*------------------------ partsList -------------------- */
@@ -73,83 +143,95 @@ textarea {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 0.5em;
+}
+.partsList_item .partBtns {
+  position: absolute;
+  right: 0.5em;
+  top: 0.5em;
+  display: flex;
+  gap: 0.3em;
+  z-index: 1000;
 }
 .partsList_item .partBtns button {
-  position: absolute;
-  right: -10px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: #4CAF50;
-  color: white;
   border: none;
+  background: rgba(0, 0, 0, 0.4784313725);
+  color: #fff;
+  width: 2em;
+  height: 2em;
   border-radius: 50%;
-  width: 32px;
-  height: 32px;
-  cursor: pointer;
-  font-size: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  z-index: 1000;
-  animation: fadeIn 0.2s ease-in;
 }
 .partsList_item .partBtns button.is-edit span {
-  display: inline-block;
   transform: rotate(90deg);
+  font-size: 0.7em;
 }
 
-.partsList_item {
-  position: relative;
-}
-.partsList_item .edit-button-click {
-  transition: all 0.2s ease;
-}
-.partsList_item .edit-button-click:hover {
-  background-color: #45a049 !important;
-  transform: translateY(-50%) scale(1.1);
-}
-.partsList_item .edit-button-click:active {
-  transform: translateY(-50%) scale(0.95);
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-50%) scale(0.8);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(-50%) scale(1);
-  }
-}
-/*------------------------ inputArea -------------------- */
-.inputArea {
+/*------------------------ inputFlame -------------------- */
+.inputFlame {
   display: flex;
   flex-direction: column;
 }
 
-.input_item {
-  display: block;
+.inputFlame_btns {
+  display: flex;
+  gap: 1em;
+  margin-bottom: 1em;
 }
-.input_item textarea,
-.input_item input {
+.inputFlame_btns .btn {
+  cursor: pointer;
+  font-size: 0.7rem;
+  color: #495057;
+  text-shadow: rgb(196, 195, 195) 1px 1px;
+  display: inline-block;
+  padding: 0.2rem 0.5rem;
+  border-radius: 0.1rem;
+  border: none;
+  background: #fff;
+  letter-spacing: 0.2rem;
+  transition: all 0.2s;
+}
+.inputFlame_btns .btn.is-active {
+  color: #fff;
+  background: #495057;
+  text-shadow: none;
+}
+.inputFlame_btns .btn:hover {
+  color: #fff;
+  background: #495057;
+  text-shadow: none;
+}
+.inputFlame_btns:hover .btn.is-active:not(:hover) {
+  color: #495057;
+  background: #fff;
+  text-shadow: rgb(196, 195, 195) 1px 1px;
+}
+
+.inputFlame_item {
+  display: block;
+  margin-top: 2em;
+}
+.inputFlame_item textarea,
+.inputFlame_item input {
   margin-top: 0.5rem;
   border: none;
   padding: 10px 20px;
   border-radius: 0.5rem;
   width: 100%;
 }
-.input_item .title {
-  font-size: 0.8em;
+.inputFlame_item .titleWrap {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+}
+.inputFlame_item .title {
+  font-size: 0.7em;
   color: #686767;
   border-bottom: 0.05rem solid #74a8c4;
   line-height: 1.3rem;
   display: inline-block;
-  text-shadow: rgb(196, 195, 195) 1px 1px;
-}
-.input_item + .input_item {
-  margin-top: 2rem;
 }
 
 /*------------------------ frameList -------------------- */
@@ -221,9 +303,11 @@ select::picker-icon,
 
 /*------------------------ DnD Styles -------------------- */
 .drag-handle {
+  cursor: -webkit-grab;
   cursor: grab;
 }
 .drag-handle:active {
+  cursor: -webkit-grabbing;
   cursor: grabbing;
 }
 
@@ -236,7 +320,7 @@ select::picker-icon,
 }
 .droppableArea.is-over {
   border-color: #74a8c4;
-  background-color: rgba(116, 168, 196, 0.1);
+  background: rgba(116, 168, 196, 0.1);
 }
 .droppableArea .drop-placeholder {
   display: flex;
@@ -357,4 +441,34 @@ select::picker-icon,
   background: none;
   padding: 0;
   font-size: inherit;
-}/*# sourceMappingURL=index.css.map */
+}
+
+/*------------------------ Code Editor Styles -------------------- */
+.code-editor {
+  font-family: "Consolas", "Monaco", "Lucida Console", "Liberation Mono", "DejaVu Sans Mono", "Bitstream Vera Sans Mono", "Courier New", monospace !important;
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+  background-color: #f8f9fa !important;
+  border: 1px solid #dee2e6 !important;
+  border-radius: 0.375rem !important;
+  padding: 1rem !important;
+  min-height: 150px !important;
+  resize: vertical;
+  -moz-tab-size: 2;
+    -o-tab-size: 2;
+       tab-size: 2;
+}
+.code-editor:focus {
+  outline: none !important;
+  border-color: #74a8c4 !important;
+  box-shadow: 0 0 0 0.2rem rgba(116, 168, 196, 0.25) !important;
+}
+.code-editor::-moz-placeholder {
+  color: #6c757d;
+  font-style: italic;
+}
+.code-editor::placeholder {
+  color: #6c757d;
+  font-style: italic;
+}
+/*# sourceMappingURL=index.css.map */

@@ -1,9 +1,7 @@
 import { useEffect, useState } from "react";
 import type { FrameTemplate } from "../types/FrameTemplate";
 import type { Part } from "../types/Part";
-// ==========================================================
-// PartsModal コンポーネントの定義
-// ==========================================================
+import { formatHtmlCode, handleTabKeyInTextarea } from "./hooks/format";
 interface PartsModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -101,6 +99,30 @@ const PartsModal: React.FC<PartsModalProps> = ({
     onClose();
   };
 
+  // HTMLフォーマット関数（編集中コンテンツ用）
+  const formatEditingHtml = () => {
+    const formatted = formatHtmlCode(curEditingPartContent);
+    setCurEditingPartContent(formatted);
+  };
+
+  // HTMLフォーマット関数（新規作成コンテンツ用）
+  const formatNewHtml = () => {
+    const formatted = formatHtmlCode(partContent);
+    setPartContent(formatted);
+  };
+
+  // テキストエリアでTabキーの処理（編集用）
+  const handleEditingKeyDown = (
+    e: React.KeyboardEvent<HTMLTextAreaElement>
+  ) => {
+    handleTabKeyInTextarea(e, curEditingPartContent, setCurEditingPartContent);
+  };
+
+  // テキストエリアでTabキーの処理（新規用）
+  const handleNewKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    handleTabKeyInTextarea(e, partContent, setPartContent);
+  };
+
   return (
     <div
       style={{
@@ -116,19 +138,11 @@ const PartsModal: React.FC<PartsModalProps> = ({
         zIndex: 1000,
       }}
     >
-      <div
-        style={{
-          background: "white",
-          padding: "20px",
-          borderRadius: "8px",
-          width: "80%",
-          maxWidth: "700px",
-          maxHeight: "80%",
-          overflowY: "auto",
-        }}
-      >
-        <h2>フレーム： {selectedFrameTemplate.name} に中身を追加</h2>
-
+      <div className="modal">
+        <div className="modal_head">
+          <h2>フレーム： 「{selectedFrameTemplate.name} 」に中身を追加</h2>
+        </div>
+        <div className="modal_contents">
         {/* パーツ編集フォーム */}
         {curEditingPartId !== null && ( // 編集モードの場合のみ表示
           <div
@@ -139,7 +153,17 @@ const PartsModal: React.FC<PartsModalProps> = ({
               marginTop: "20px",
             }}
           >
-            <h3>パーツを編集</h3>
+            <div className="code-editor-header">
+              <h3>パーツを編集</h3>
+              <button
+                className="adjustButton"
+                onClick={formatEditingHtml}
+                type="button"
+                disabled={!curEditingPartContent.trim()}
+              >
+                コード整形
+              </button>
+            </div>
             <input
               value={curEditingPartName}
               onChange={(e) => setCurEditingPartName(e.target.value)}
@@ -147,14 +171,16 @@ const PartsModal: React.FC<PartsModalProps> = ({
               style={{ width: "100%", padding: "8px", marginBottom: "10px" }}
             />
             <textarea
+              className="code-editor"
               value={curEditingPartContent}
               onChange={(e) => setCurEditingPartContent(e.target.value)}
-              placeholder="中身"
+              onKeyDown={handleEditingKeyDown}
+              placeholder="中身（HTMLコード）"
+              spellCheck={false}
               style={{
                 width: "100%",
-                padding: "8px",
                 marginBottom: "10px",
-                minHeight: "100px",
+                minHeight: "150px",
               }}
             />
             <button
@@ -190,17 +216,36 @@ const PartsModal: React.FC<PartsModalProps> = ({
         {/* フレームの中身を入力 */}
         {curEditingPartId === null && (
           <>
-            <div className="inputArea bg-gray">
-              <input
-                value={partName}
-                onChange={(e) => setPartName(e.target.value)}
-                placeholder="パーツ名"
-              />
-              <textarea
-                value={partContent}
-                onChange={(e) => setPartContent(e.target.value)}
-                placeholder="中身"
-              />
+            <div className="inputFlame_item">
+              <div className="input_item">
+                <div className="title">パーツ名</div>
+                <input
+                  value={partName}
+                  onChange={(e) => setPartName(e.target.value)}
+                  placeholder="パーツ名"
+                />
+              </div>
+              <div className="input_item">
+                <div className="code-editor-header">
+                  <div className="title">中身</div>
+                  <button
+                    className="adjustButton"
+                    onClick={formatNewHtml}
+                    type="button"
+                    disabled={!partContent.trim()}
+                  >
+                    コード整形
+                  </button>
+                </div>
+                <textarea
+                  className="code-editor"
+                  value={partContent}
+                  onChange={(e) => setPartContent(e.target.value)}
+                  onKeyDown={handleNewKeyDown}
+                  placeholder="ここにHTMLコードを入力..."
+                  spellCheck={false}
+                />
+              </div>
             </div>
             <button
               onClick={() => {
@@ -226,6 +271,7 @@ const PartsModal: React.FC<PartsModalProps> = ({
           </>
         )}
         {/* フレームの中身を入力 */}
+        </div>
       </div>
     </div>
   );
