@@ -14,6 +14,24 @@ import {
 import { SortablePartItem } from "../components/Dnd";
 type UniqueIdentifier = string | number;
 
+// CSS文字列をオブジェクトに変換するヘルパー関数
+const parseStyleString = (styleStr: string): Record<string, string> => {
+  const styles: Record<string, string> = {};
+  if (!styleStr) return styles;
+
+  styleStr.split(";").forEach((style) => {
+    const [property, value] = style.split(":").map((s) => s.trim());
+    if (property && value) {
+      // CSS property をキャメルケースに変換
+      const camelProperty = property.replace(/-([a-z])/g, (match, letter) =>
+        letter.toUpperCase()
+      );
+      styles[camelProperty] = value;
+    }
+  });
+  return styles;
+};
+
 export default function AssembleView() {
   const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
   const [localParts, setLocalParts] = useState<Part[]>([]);
@@ -24,6 +42,29 @@ export default function AssembleView() {
   const { templates } = useFrameTemplates();
   const { parts, addPart, updatePart, deletePart, updatePartsOrder } =
     useParts();
+
+  // 外側フレームテンプレートを自動検出（名前が「外側フレーム」で始まるもの）
+  const outerFrameTemplate = templates.find((tpl) =>
+    tpl.name.startsWith("外側フレーム")
+  );
+
+  // LocalStorageからtableスタイルを読み込み
+  const [tableStyles, setTableStyles] = useState({
+    outerTable:
+      "width: 100%; border: 0; cellspacing: 0; cellpadding: 0; background-color: #f4f4f4;",
+    outerTd: "text-align: center;",
+    innerTable:
+      "width: 600px; max-width: 100%; border: 0; cellspacing: 0; cellpadding: 0; background-color: #ffffff;",
+    innerTd: "padding: 0;",
+  });
+
+  useEffect(() => {
+    const savedStyles = localStorage.getItem("tableStyles");
+    if (savedStyles) {
+      setTableStyles(JSON.parse(savedStyles));
+    }
+  }, []);
+
   //モーダルの開閉
   const [showPartsModal, setShowPartsModal] = useState(false);
   //モーダルに渡すフレーム情報
@@ -65,7 +106,13 @@ export default function AssembleView() {
       })
       .join("\n");
 
-    setGeneratedHtml(htmlParts);
+    // 外側フレームテンプレートがある場合は、それで全体をラップ
+    let finalHtml = htmlParts;
+    if (outerFrameTemplate) {
+      finalHtml = outerFrameTemplate.frame.replace(/{{content}}/g, htmlParts);
+    }
+
+    setGeneratedHtml(finalHtml);
     setViewMode("code");
   };
 
@@ -130,13 +177,13 @@ export default function AssembleView() {
       </Link>
 
       {/* 保存ボタン */}
-      <div className="save-controls">
+      <div className="saveBtns">
         <button
           onClick={handleSave}
           disabled={!hasUnsavedChanges}
-          className={hasUnsavedChanges ? "save-btn unsaved" : "save-btn"}
+          className={hasUnsavedChanges ? "is-save" : "is-saved"}
         >
-          {hasUnsavedChanges ? "save" : "saved"}
+          {hasUnsavedChanges ? "保存する" : "保存済み"}
         </button>
         <button
           onClick={() => {
@@ -147,9 +194,8 @@ export default function AssembleView() {
             }
           }}
           disabled={localParts.length === 0}
-          className="export-btn"
         >
-          {viewMode === "parts" ? "HTML" : "preview"}
+          {viewMode === "parts" ? "HTML" : "previewを確認"}
         </button>
       </div>
 
@@ -190,108 +236,110 @@ export default function AssembleView() {
           onDragStart={(event) => setActiveId(event.active.id.toString())}
         >
           <div className="contents is-works">
+            {/* 外側フレーム適用状態を表示 */}
+            {outerFrameTemplate && (
+              <div>外側フレーム適用中: {outerFrameTemplate.name}</div>
+            )}
+
+            {/* HTMLメール風のコンテナ */}
             <div
-              style={
-                {
-                  fontFamily:
-                    "'Hiragino Sans', 'ヒラギノ角ゴ ProN', 'Meiryo', 'メイリオ', sans-serif",
-                  backgroundColor: "#fce7f3",
-                  margin: 0,
-                  padding: 0,
-                  WebkitTextSizeAdjust: "100%",
-                  textSizeAdjust: "100%",
-                } as any
-              }
+              style={{
+                margin: 0,
+                padding: 0,
+                backgroundColor: "#f4f4f4",
+                fontFamily:
+                  "'Hiragino Sans', 'ヒラギノ角ゴ ProN', 'Meiryo', 'メイリオ', sans-serif",
+              }}
             >
-              <table
-                align="center"
-                border={0}
-                cellPadding="0"
-                cellSpacing="0"
-                width="100%"
+              {/* table構造をdivに変更してDnDエラーを解決 */}
+              <div
                 style={
                   {
-                    borderCollapse: "collapse",
-                    msoTableLspace: "0pt",
-                    msoTableRspace: "0pt",
-                    backgroundColor: "#fce7f3",
+                    width: "100%",
+                    backgroundColor: "#f4f4f4",
+                    display: "table",
+                    ...parseStyleString(tableStyles.outerTable),
                   } as any
                 }
               >
-                <tr>
-                  <td align="center" style={{ padding: "20px 0" }}>
-                    <table
-                      align="center"
-                      border={0}
-                      cellPadding="0"
-                      cellSpacing="0"
-                      width="600"
+                <div
+                  style={
+                    {
+                      display: "table-cell",
+                      textAlign: "center",
+                      ...parseStyleString(tableStyles.outerTd),
+                    } as any
+                  }
+                >
+                  <div
+                    style={
+                      {
+                        width: "600px",
+                        maxWidth: "100%",
+                        backgroundColor: "#ffffff",
+                        margin: "0 auto",
+                        ...parseStyleString(tableStyles.innerTable),
+                      } as any
+                    }
+                  >
+                    <div
                       style={
                         {
-                          borderCollapse: "collapse",
-                          msoTableLspace: "0pt",
-                          msoTableRspace: "0pt",
-                          backgroundColor: "#ffffff",
-                          borderRadius: "20px",
-                          overflow: "hidden",
-                          boxShadow: "0 4px 20px rgba(0, 0, 0, 0.08)",
+                          padding: 0,
+                          ...parseStyleString(tableStyles.innerTd),
                         } as any
                       }
                     >
-                      <tr>
-                        <td align="center">
-                          {viewMode === "parts" ? (
-                            // 既存のパーツ表示（DnD機能付き）
-                            <SortableContext
-                              items={localParts.map((p) => `part-${p.id}`)}
-                              strategy={verticalListSortingStrategy}
-                            >
-                              {/* パーツ一覧 */}
-                              {localParts.length > 0 ? (
-                                localParts.map((part) => (
-                                  <SortablePartItem
-                                    key={part.id}
-                                    part={part}
-                                    onEdit={() => handleEditPart(part)}
-                                    onDelete={async () => {
-                                      // データベースから削除
-                                      await deletePart(part.id);
+                      {viewMode === "parts" ? (
+                        // 既存のパーツ表示（DnD機能付き）
+                        <SortableContext
+                          items={localParts.map((p) => `part-${p.id}`)}
+                          strategy={verticalListSortingStrategy}
+                        >
+                          {/* パーツ一覧 */}
+                          {localParts.length > 0 ? (
+                            localParts.map((part) => (
+                              <SortablePartItem
+                                key={part.id}
+                                part={part}
+                                onEdit={() => handleEditPart(part)}
+                                onDelete={async () => {
+                                  // データベースから削除
+                                  await deletePart(part.id);
 
-                                      // ローカル状態からも削除（useEffectで同期されるが、即座に反映するため）
-                                      setLocalParts((prev) =>
-                                        prev.filter((p) => p.id !== part.id)
-                                      );
-                                    }}
-                                  />
-                                ))
-                              ) : (
-                                <div className="drop-placeholder">
-                                  パーツをドラッグして並べてください
-                                </div>
-                              )}
-                            </SortableContext>
+                                  // ローカル状態からも削除（useEffectで同期されるが、即座に反映するため）
+                                  setLocalParts((prev) =>
+                                    prev.filter((p) => p.id !== part.id)
+                                  );
+                                }}
+                              />
+                            ))
                           ) : (
-                            // HTMLコード表示
-                            <div className="code-view">
-                              <div className="code-header">
-                                <button
-                                  className="copy-btn"
-                                  onClick={copyToClipboard}
-                                >
-                                  📋 copy
-                                </button>
-                              </div>
-                              <pre className="code-display">
-                                <code>{generatedHtml}</code>
-                              </pre>
+                            <div className="drop-placeholder">
+                              パーツをドラッグして並べてください
                             </div>
                           )}
-                        </td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
-              </table>
+                        </SortableContext>
+                      ) : (
+                        // HTMLコード表示
+                        <div className="code-view">
+                          <div className="code-header">
+                            <button
+                              className="copy-btn"
+                              onClick={copyToClipboard}
+                            >
+                              📋 copy
+                            </button>
+                          </div>
+                          <pre className="code-display">
+                            <code>{generatedHtml}</code>
+                          </pre>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
           <div className="contents">

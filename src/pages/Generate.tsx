@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Layout from "../layout/Layout";
 import { useFrameTemplates } from "../components/hooks/useFrameTemplates";
 import { Link } from "react-router-dom";
@@ -16,6 +16,30 @@ export default function GenerateView() {
   const [templateName, setTemplateName] = useState("");
   const [templateFrame, setTemplateFrame] = useState("");
   const [editId, setEditId] = useState<number | null>(null);
+
+  // tableスタイル設定用の状態を追加
+  const [showStyleEditor, setShowStyleEditor] = useState(false);
+  const [tableStyles, setTableStyles] = useState({
+    outerTable: `width: 100%; border: 0; cellspacing: 0; cellpadding: 0; background-color: #f4f4f4;`,
+    outerTd: `text-align: center;`,
+    innerTable: `width: 600px; max-width: 100%; border: 0; cellspacing: 0; cellpadding: 0; background-color: #ffffff;`,
+    innerTd: `padding: 0;`,
+  });
+
+  // LocalStorageからtableスタイルを読み込み
+  useEffect(() => {
+    const savedStyles = localStorage.getItem("tableStyles");
+    if (savedStyles) {
+      setTableStyles(JSON.parse(savedStyles));
+    }
+  }, []);
+
+  // tableスタイルをLocalStorageに保存
+  const saveTableStyles = () => {
+    localStorage.setItem("tableStyles", JSON.stringify(tableStyles));
+    setShowStyleEditor(false);
+    alert("テーブルスタイルが保存されました！");
+  };
 
   //templates の中からクリックされたフレームのidを探す
   const selectedTemplate = templates.find(
@@ -50,6 +74,30 @@ export default function GenerateView() {
     setTemplateName(tpl.name);
     setTemplateFrame(tpl.frame);
     setSelectedTemplateId(tpl.id);
+  };
+
+  // 事前定義されたtableテンプレートを設定するハンドラ
+  const handleSetPredefinedTable = () => {
+    setEditId(null);
+    setTemplateName("外側フレーム - HTMLメールテンプレート");
+    setTemplateFrame(`<body style="margin:0; padding:0; background-color:#f4f4f4;">
+  <!-- 全体ラッパー -->
+  <table width="100%" border="0" cellspacing="0" cellpadding="0" bgcolor="#f4f4f4" style="{{outerTableStyle}}">
+    <tr>
+      <td align="center" style="{{outerTdStyle}}">
+        <!-- メインコンテナ -->
+        <table width="600" border="0" cellspacing="0" cellpadding="0" bgcolor="#ffffff" style="{{innerTableStyle}}">
+          <tr>
+            <td style="{{innerTdStyle}}">
+              {{content}}
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>`);
+    setSelectedTemplateId(null);
   };
 
   // テンプレート削除ボタンクリック時のハンドラ
@@ -101,9 +149,115 @@ export default function GenerateView() {
                   </button>
                 </>
               )}
+              <button
+                className={`btn ${showStyleEditor ? "is-active" : ""}`}
+                onClick={() => setShowStyleEditor(!showStyleEditor)}
+              >
+                スタイルを指定
+              </button>
             </div>
 
-            <div className="inputFlame_item">
+            {/* スタイル設定エリア */}
+            {showStyleEditor && (
+              <div
+                className="styleEditor"
+                style={{
+                  backgroundColor: "#f8f9fa",
+                  padding: "20px",
+                  marginBottom: "20px",
+                  borderRadius: "8px",
+                }}
+              >
+                <div
+                  className="title"
+                  style={{ marginBottom: "15px", fontWeight: "bold" }}
+                >
+                  テーブルスタイル設定
+                </div>
+
+                <div className="input_item" style={{ marginBottom: "15px" }}>
+                  <div className="title">外側テーブルスタイル</div>
+                  <textarea
+                    value={tableStyles.outerTable}
+                    onChange={(e) =>
+                      setTableStyles((prev) => ({
+                        ...prev,
+                        outerTable: e.target.value,
+                      }))
+                    }
+                    placeholder="border-collapse: collapse; ..."
+                    style={{}}
+                  />
+                </div>
+
+                <div className="input_item" style={{ marginBottom: "15px" }}>
+                  <div className="title">外側セルスタイル (td)</div>
+                  <textarea
+                    value={tableStyles.outerTd}
+                    onChange={(e) =>
+                      setTableStyles((prev) => ({
+                        ...prev,
+                        outerTd: e.target.value,
+                      }))
+                    }
+                    placeholder="padding: 20px 0; ..."
+                    style={{}}
+                  />
+                </div>
+
+                <div className="input_item" style={{ marginBottom: "15px" }}>
+                  <div className="title">内側テーブルスタイル</div>
+                  <textarea
+                    value={tableStyles.innerTable}
+                    onChange={(e) =>
+                      setTableStyles((prev) => ({
+                        ...prev,
+                        innerTable: e.target.value,
+                      }))
+                    }
+                    placeholder="background-color: #ffffff; border-radius: 20px; ..."
+                    style={{
+                      width: "100%",
+                      height: "80px",
+                      resize: "vertical",
+                    }}
+                  />
+                </div>
+
+                <div className="input_item" style={{ marginBottom: "15px" }}>
+                  <div className="title">内側セルスタイル (td)</div>
+                  <textarea
+                    value={tableStyles.innerTd}
+                    onChange={(e) =>
+                      setTableStyles((prev) => ({
+                        ...prev,
+                        innerTd: e.target.value,
+                      }))
+                    }
+                    placeholder="padding: 0; ..."
+                    style={{
+                      width: "100%",
+                      height: "60px",
+                      resize: "vertical",
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: "flex", gap: "10px" }}>
+                  <button className="inputBtn" onClick={saveTableStyles}>
+                    スタイルを保存
+                  </button>
+                  <button
+                    className="btn"
+                    onClick={() => setShowStyleEditor(false)}
+                  >
+                    キャンセル
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <div className="input_item">
               <div className="titleWrap">
                 <div className="title">フレームのコード</div>
                 <button
@@ -116,7 +270,7 @@ export default function GenerateView() {
                 </button>
               </div>
               <textarea
-                className="code-editor"
+                className="codeEditor"
                 value={templateFrame}
                 onChange={(e) => setTemplateFrame(e.target.value)}
                 onKeyDown={handleKeyDown}
@@ -124,7 +278,7 @@ export default function GenerateView() {
                 spellCheck={false}
               />
             </div>
-            <div className="inputFlame_item">
+            <div className="input_item">
               <div className="title">フレームのタイトル</div>
               <input
                 value={templateName}
@@ -142,6 +296,12 @@ export default function GenerateView() {
 
         <div className="contents">
           <div className="frameList">
+            <button
+              className="frameList_item"
+              onClick={handleSetPredefinedTable}
+            >
+              <div>body直下 wrapper table</div>
+            </button>
             {templates.map((tpl) => (
               <button
                 className={`frameList_item ${

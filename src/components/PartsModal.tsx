@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import type { FrameTemplate } from "../types/FrameTemplate";
 import type { Part } from "../types/Part";
 import { formatHtmlCode, handleTabKeyInTextarea } from "./hooks/format";
+import React from "react";
+
 interface PartsModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -51,8 +53,20 @@ const PartsModal: React.FC<PartsModalProps> = ({
       setPartName("");
       setPartContent("");
     }
-    //editingPart または isOpen のいずれかが変更されたら再実行
-  }, [editingPart, isOpen]); // isOpenも依存配列に追加し、モーダルの開閉でリセットされるようにする
+    // editingPartのみに依存し、isOpenは除外（無限ループを防ぐ）
+  }, [editingPart]);
+
+  // モーダルが開いたときの初期化は別のuseEffectで処理
+  useEffect(() => {
+    if (isOpen && !editingPart) {
+      // 新規作成モードでモーダルが開いたときのみフォームをクリア
+      setPartName("");
+      setPartContent("");
+      setCurEditingPartId(null);
+      setCurEditingPartName("");
+      setCurEditingPartContent("");
+    }
+  }, [isOpen]); // isOpenのみに依存
 
   // パーツ追加
   const handleAddPart = async () => {
@@ -124,153 +138,113 @@ const PartsModal: React.FC<PartsModalProps> = ({
   };
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: "rgba(0,0,0,0.7)",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        zIndex: 1000,
-      }}
-    >
+    <div className="modal_bg">
       <div className="modal">
+        <button className="modal_deleteBtn" onClick={onClose}>
+          ×
+        </button>
+
         <div className="modal_head">
-          <h2>フレーム： 「{selectedFrameTemplate.name} 」に中身を追加</h2>
+          <h2>「{selectedFrameTemplate.name} 」に中身を追加</h2>
         </div>
         <div className="modal_contents">
-        {/* パーツ編集フォーム */}
-        {curEditingPartId !== null && ( // 編集モードの場合のみ表示
-          <div
-            style={{
-              background: "#f0f0f0",
-              padding: "15px",
-              borderRadius: "5px",
-              marginTop: "20px",
-            }}
-          >
-            <div className="code-editor-header">
-              <h3>パーツを編集</h3>
-              <button
-                className="adjustButton"
-                onClick={formatEditingHtml}
-                type="button"
-                disabled={!curEditingPartContent.trim()}
-              >
-                コード整形
-              </button>
-            </div>
-            <input
-              value={curEditingPartName}
-              onChange={(e) => setCurEditingPartName(e.target.value)}
-              placeholder="パーツ名"
-              style={{ width: "100%", padding: "8px", marginBottom: "10px" }}
-            />
-            <textarea
-              className="code-editor"
-              value={curEditingPartContent}
-              onChange={(e) => setCurEditingPartContent(e.target.value)}
-              onKeyDown={handleEditingKeyDown}
-              placeholder="中身（HTMLコード）"
-              spellCheck={false}
-              style={{
-                width: "100%",
-                marginBottom: "10px",
-                minHeight: "150px",
-              }}
-            />
-            <button
-              onClick={handleUpdatePart}
-              style={{
-                marginRight: "10px",
-                padding: "8px 15px",
-                background: "#4CAF50",
-                color: "white",
-                border: "none",
-                borderRadius: "4px",
-                cursor: "pointer",
-              }}
-            >
-              更新
-            </button>
-            <button
-              onClick={handleCancelEdit}
-              style={{
-                padding: "8px 15px",
-                background: "#f44336",
-                color: "white",
-                border: "none",
-                borderRadius: "4px",
-                cursor: "pointer",
-              }}
-            >
-              キャンセル
-            </button>
-          </div>
-        )}
-
-        {/* フレームの中身を入力 */}
-        {curEditingPartId === null && (
-          <>
-            <div className="inputFlame_item">
+          <div className="modal_inputArea">
+            {/* パーツ編集フォーム */}
+            {curEditingPartId !== null && ( // 編集モードの場合のみ表示
               <div className="input_item">
-                <div className="title">パーツ名</div>
+                <div className="title">パーツの名前</div>
                 <input
-                  value={partName}
-                  onChange={(e) => setPartName(e.target.value)}
+                  value={curEditingPartName}
+                  onChange={(e) => setCurEditingPartName(e.target.value)}
                   placeholder="パーツ名"
+                  style={{
+                    width: "100%",
+                    padding: "8px",
+                    marginBottom: "10px",
+                  }}
                 />
-              </div>
-              <div className="input_item">
-                <div className="code-editor-header">
-                  <div className="title">中身</div>
-                  <button
-                    className="adjustButton"
-                    onClick={formatNewHtml}
-                    type="button"
-                    disabled={!partContent.trim()}
-                  >
-                    コード整形
+                <div className="input_item">
+                  <div className="titleWrap">
+                    <div className="title">パーツを編集</div>
+                    <button
+                      className="adjustButton"
+                      onClick={formatEditingHtml}
+                      type="button"
+                      disabled={!curEditingPartContent.trim()}
+                    >
+                      コード整形
+                    </button>
+                  </div>
+                  <textarea
+                    className="codeEditor"
+                    value={curEditingPartContent}
+                    onChange={(e) => setCurEditingPartContent(e.target.value)}
+                    onKeyDown={handleEditingKeyDown}
+                    placeholder="中身（HTMLコード）"
+                    spellCheck={false}
+                    style={{
+                      width: "100%",
+                      marginBottom: "10px",
+                      minHeight: "150px",
+                    }}
+                  />
+                </div>
+                <div className="inputBtn_wrap">
+                  <button className="inputBtn" onClick={handleUpdatePart}>
+                    更新
+                  </button>
+                  <button className="inputBtn" onClick={handleCancelEdit}>
+                    キャンセル
                   </button>
                 </div>
-                <textarea
-                  className="code-editor"
-                  value={partContent}
-                  onChange={(e) => setPartContent(e.target.value)}
-                  onKeyDown={handleNewKeyDown}
-                  placeholder="ここにHTMLコードを入力..."
-                  spellCheck={false}
-                />
               </div>
-            </div>
-            <button
-              onClick={() => {
-                handleAddPart();
-              }}
-            >
-              保存
-            </button>
-            <button
-              onClick={onClose}
-              style={{
-                marginTop: "20px",
-                padding: "10px 20px",
-                background: "#007bff",
-                color: "white",
-                border: "none",
-                borderRadius: "5px",
-                cursor: "pointer",
-              }}
-            >
-              閉じる
-            </button>
-          </>
-        )}
-        {/* フレームの中身を入力 */}
+            )}
+
+            {/* フレームの中身を入力 */}
+            {curEditingPartId === null && (
+              <>
+                <div className="input_item">
+                  <div className="title">パーツ名</div>
+                  <input
+                    value={partName}
+                    onChange={(e) => setPartName(e.target.value)}
+                    placeholder="パーツ名"
+                  />
+                </div>
+                <div className="input_item">
+                  <div className="titleWrap">
+                    <div className="title">中身</div>
+                    <button
+                      className="adjustButton"
+                      onClick={formatNewHtml}
+                      type="button"
+                      disabled={!partContent.trim()}
+                    >
+                      コード整形
+                    </button>
+                  </div>
+                  <textarea
+                    className="codeEditor"
+                    value={partContent}
+                    onChange={(e) => setPartContent(e.target.value)}
+                    onKeyDown={handleNewKeyDown}
+                    placeholder="ここにHTMLコードを入力..."
+                    spellCheck={false}
+                  />
+                </div>
+                <div className="inputBtn_wrap">
+                  <button
+                    className="inputBtn"
+                    onClick={() => {
+                      handleAddPart();
+                    }}
+                  >
+                    保存
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>

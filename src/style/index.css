@@ -24,6 +24,7 @@ textarea {
 }
 
 .contentsWrap {
+  margin-top: 1rem;
   display: grid;
   grid-template-columns: 5fr 2fr;
   gap: 0.5rem;
@@ -41,6 +42,7 @@ textarea {
   margin-top: 2rem;
   display: flex;
   justify-content: center;
+  gap: 1.5rem;
 }
 
 .inputBtn {
@@ -64,7 +66,7 @@ textarea {
 .adjustButton {
   position: relative;
   right: 0;
-  top: -1em;
+  top: 0;
   padding: 0.4rem 0.8rem;
   font-size: 0.6em;
   border: 0.05rem solid #a6a5a5;
@@ -106,23 +108,85 @@ textarea {
   transform: translateY(0);
 }
 
-.modal {
-  background: #fff;
+.saveBtns {
+  display: flex;
+  gap: 1rem;
+}
+.saveBtns button {
   border: 0.05rem solid #a6a5a5;
+  background: #d4d4d4;
+  color: #333;
+  padding: 0.5rem 1rem;
+  border-radius: 0.1rem;
+}
+.saveBtns button:hover:not(.is-saved) {
+  background: #000;
+  color: #fff;
+}
+.saveBtns button.is-save {
+  color: #fff;
+  background: #74a8c4;
+}
+.saveBtns button.is-saved {
+  cursor: default;
+  background: #f2f1f1;
+}
+
+.modal {
+  position: relative;
+  background: #fff;
+  border: 0.3rem solid #585858;
   border-radius: 0.5rem;
   width: 80%;
   max-width: 700px;
   max-height: 80%;
   overflow-y: auto;
+  z-index: 1001;
+}
+
+.modal_bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7333333333);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal_deleteBtn {
+  position: absolute;
+  top: -1rem;
+  right: -1rem;
+  z-index: 1003;
+  font-size: 1.5rem;
+  border: none;
+  background: none;
+  color: #fff;
 }
 
 .modal_head {
+  font-size: 1rem;
+  letter-spacing: 0.05rem;
+  font-weight: bold;
+  color: #fff;
+  text-shadow: rgb(196, 195, 195) 1px 1px;
   background: #a6a5a5;
-  padding: 1rem;
+  padding: 2rem;
+  border-bottom: 0.2rem solid #585858;
 }
 
 .modal_contents {
-  padding: 0.5rem 1rem;
+  padding: 2rem 1rem;
+}
+
+.modal_inputArea {
+  padding: 1rem;
+  background: #f2f2f2;
+  border-radius: 0.5rem;
 }
 
 /*------------------------ partsList -------------------- */
@@ -182,11 +246,10 @@ textarea {
 }
 .inputFlame_btns .btn {
   cursor: pointer;
-  font-size: 0.7rem;
   color: #495057;
   text-shadow: rgb(196, 195, 195) 1px 1px;
   display: inline-block;
-  padding: 0.2rem 0.5rem;
+  padding: 0.5rem 1rem;
   border-radius: 0.1rem;
   border: none;
   background: #fff;
@@ -209,24 +272,26 @@ textarea {
   text-shadow: rgb(196, 195, 195) 1px 1px;
 }
 
-.inputFlame_item {
+.input_item {
   display: block;
-  margin-top: 2em;
 }
-.inputFlame_item textarea,
-.inputFlame_item input {
+.input_item.input_item {
+  margin-top: 1rem;
+}
+.input_item textarea,
+.input_item input {
   margin-top: 0.5rem;
   border: none;
   padding: 10px 20px;
   border-radius: 0.5rem;
   width: 100%;
 }
-.inputFlame_item .titleWrap {
+.input_item .titleWrap {
   position: relative;
   display: flex;
   justify-content: space-between;
 }
-.inputFlame_item .title {
+.input_item .title {
   font-size: 0.7em;
   color: #686767;
   border-bottom: 0.05rem solid #74a8c4;
@@ -262,7 +327,7 @@ textarea {
   border: 0.05rem solid #a6a5a5;
 }
 .frameList_item.is-active::before {
-  background: #f8defb;
+  background: #74a8c4;
 }
 .frameList_item + .frameList_item {
   margin-top: 1rem;
@@ -303,11 +368,9 @@ select::picker-icon,
 
 /*------------------------ DnD Styles -------------------- */
 .drag-handle {
-  cursor: -webkit-grab;
   cursor: grab;
 }
 .drag-handle:active {
-  cursor: -webkit-grabbing;
   cursor: grabbing;
 }
 
@@ -340,135 +403,26 @@ select::picker-icon,
   pointer-events: none;
 }
 
-/*------------------------ Save Button Styles -------------------- */
-.save-controls {
-  margin: 1rem 0;
-  display: flex;
-  justify-content: flex-end;
-}
-
-.save-btn {
-  padding: 0.5rem 1rem;
-  border: none;
-  border-radius: 0.25rem;
-  cursor: pointer;
-  font-size: 0.9rem;
-  transition: all 0.2s ease;
-}
-.save-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-.save-btn.unsaved {
-  background-color: #ff6b6b;
-  color: white;
-}
-.save-btn.unsaved:hover:not(:disabled) {
-  background-color: #ff5252;
-}
-.save-btn:not(.unsaved) {
-  background-color: #4caf50;
-  color: white;
-}
-
-.export-btn {
-  padding: 8px 16px;
-  margin-left: 10px;
-  background-color: #2196f3;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-}
-.export-btn:hover:not(:disabled) {
-  background-color: #1976d2;
-}
-.export-btn:disabled {
-  background-color: #ccc;
-  cursor: not-allowed;
-}
-.export-btn.active {
-  background-color: #1976d2;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-.code-view {
-  padding: 20px;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-.code-view .code-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-}
-.code-view .code-header h3 {
-  margin: 0;
-  font-size: 18px;
-  color: #333;
-}
-.code-view .code-header .copy-btn {
-  padding: 8px 16px;
-  background-color: #4caf50;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-}
-.code-view .code-header .copy-btn:hover {
-  background-color: #45a049;
-}
-.code-view .code-display {
-  flex: 1;
-  background-color: #f5f5f5;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  padding: 16px;
-  margin: 0;
-  font-family: "Courier New", monospace;
-  font-size: 14px;
-  line-height: 1.4;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  overflow: auto;
-  min-height: 300px;
-}
-.code-view .code-display code {
-  background: none;
-  padding: 0;
-  font-size: inherit;
-}
-
 /*------------------------ Code Editor Styles -------------------- */
-.code-editor {
+.codeEditor {
   font-family: "Consolas", "Monaco", "Lucida Console", "Liberation Mono", "DejaVu Sans Mono", "Bitstream Vera Sans Mono", "Courier New", monospace !important;
   font-size: 13px !important;
   line-height: 1.5 !important;
-  background-color: #f8f9fa !important;
-  border: 1px solid #dee2e6 !important;
-  border-radius: 0.375rem !important;
-  padding: 1rem !important;
-  min-height: 150px !important;
   resize: vertical;
   -moz-tab-size: 2;
     -o-tab-size: 2;
        tab-size: 2;
 }
-.code-editor:focus {
+.codeEditor:focus {
   outline: none !important;
   border-color: #74a8c4 !important;
   box-shadow: 0 0 0 0.2rem rgba(116, 168, 196, 0.25) !important;
 }
-.code-editor::-moz-placeholder {
+.codeEditor::-moz-placeholder {
   color: #6c757d;
   font-style: italic;
 }
-.code-editor::placeholder {
+.codeEditor::placeholder {
   color: #6c757d;
   font-style: italic;
-}
-/*# sourceMappingURL=index.css.map */
+}/*# sourceMappingURL=index.css.map */

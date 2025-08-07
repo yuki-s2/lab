@@ -2,6 +2,7 @@
 
 $textShadow: rgb(196, 195, 195) 1px 1px;
 $rightGray: #a6a5a5;
+$accentColor: #74a8c4;
 
 html {
   font-size: calc(100vw / 75);
@@ -28,6 +29,7 @@ textarea {
 }
 
 .contentsWrap {
+  @include marginTop("S");
   display: grid;
   grid-template-columns: 5fr 2fr;
   gap: .5rem;
@@ -46,6 +48,7 @@ textarea {
   margin-top: 2rem;
   display: flex;
   justify-content: center;
+  gap: 1.5rem;
 }
 
 .inputBtn {
@@ -69,7 +72,7 @@ textarea {
 .adjustButton {
   position: relative;
   right: 0;
-  top: -1em;
+  top: 0;
   padding: 0.4rem 0.8rem;
   font-size: 0.6em;
   border: .05rem solid $rightGray;
@@ -113,24 +116,90 @@ textarea {
   }
 }
 
+.saveBtns {
+  display: flex;
+  gap: 1rem;
+
+  button {
+    border: 0.05rem solid #a6a5a5;
+    background: #d4d4d4;
+    color: #333;
+    padding: .5rem 1rem;
+    border-radius: .1rem;
+
+    &:hover:not(.is-saved) {
+      background: #000;
+      color: #fff;
+    }
+
+    &.is-save {
+      color: #fff;
+      background: $accentColor;
+    }
+
+    &.is-saved {
+      cursor: default;
+      background: #f2f1f1;
+    }
+  }
+}
+
 .modal {
+  position: relative;
   background: #fff;
-  border: 0.05rem solid #a6a5a5;
+  border: 0.3rem solid #585858;
   border-radius: .5rem;
   width: 80%;
   max-width: 700px;
   max-height: 80%;
   overflow-y: auto;
+  z-index: 1001;
 }
 
+.modal_bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #000000bb;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal_deleteBtn {
+  position: absolute;
+  top: -1rem;
+  right: -1rem;
+  z-index: 1003;
+  font-size: 1.5rem;
+  border: none;
+  background: none;
+  color: #fff;
+}
+
+
 .modal_head {
+  font-size: 1rem;
+  letter-spacing: .05rem;
+  font-weight: bold;
+  color: #fff;
+  text-shadow: $textShadow;
   background: $rightGray;
-  padding: 1rem;
+  padding: 2rem;
+  border-bottom: 0.2rem solid #585858;
 }
 
 .modal_contents {
-  padding: .5rem 1rem;
+  padding: 2rem 1rem;
+}
 
+.modal_inputArea {
+  padding: 1rem;
+  background: #f2f2f2;
+  border-radius: .5rem;
 }
 
 /*------------------------ partsList -------------------- */
@@ -205,11 +274,10 @@ textarea {
 
   .btn {
     cursor: pointer;
-    font-size: .7rem;
     color: #495057;
     text-shadow: $textShadow;
     display: inline-block;
-    padding: .2rem .5rem;
+    padding: .5rem 1rem;
     border-radius: .1rem;
     border: none;
     background: #fff;
@@ -236,9 +304,12 @@ textarea {
   }
 }
 
-.inputFlame_item {
+.input_item {
   display: block;
-  margin-top: 2em;
+
+  &.input_item {
+    @include marginTop("S");
+  }
 
   textarea,
   input {
@@ -258,7 +329,7 @@ textarea {
   .title {
     font-size: .7em;
     color: #686767;
-    border-bottom: .05rem solid #74a8c4;
+    border-bottom: .05rem solid $accentColor;
     line-height: 1.3rem;
     display: inline-block;
   }
@@ -292,7 +363,7 @@ textarea {
 
   &.is-active {
     &::before {
-      background: #f8defb;
+      background: $accentColor;
     }
   }
 
@@ -356,7 +427,7 @@ select,
   transition: all 0.2s ease;
 
   &.is-over {
-    border-color: #74a8c4;
+    border-color: $accentColor;
     background: rgba(116, 168, 196, 0.1);
   }
 
@@ -379,140 +450,17 @@ select,
   pointer-events: none;
 }
 
-/*------------------------ Save Button Styles -------------------- */
-.save-controls {
-  margin: 1rem 0;
-  display: flex;
-  justify-content: flex-end;
-}
-
-.save-btn {
-  padding: 0.5rem 1rem;
-  border: none;
-  border-radius: 0.25rem;
-  cursor: pointer;
-  font-size: 0.9rem;
-  transition: all 0.2s ease;
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  &.unsaved {
-    background-color: #ff6b6b;
-    color: white;
-
-    &:hover:not(:disabled) {
-      background-color: #ff5252;
-    }
-  }
-
-  &:not(.unsaved) {
-    background-color: #4caf50;
-    color: white;
-  }
-}
-
-// エクスポートボタンのスタイル
-.export-btn {
-  padding: 8px 16px;
-  margin-left: 10px;
-  background-color: #2196f3;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-
-  &:hover:not(:disabled) {
-    background-color: #1976d2;
-  }
-
-  &:disabled {
-    background-color: #ccc;
-    cursor: not-allowed;
-  }
-
-  &.active {
-    background-color: #1976d2;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  }
-}
-
-// HTMLコードビューのスタイル
-.code-view {
-  padding: 20px;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-
-  .code-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 16px;
-
-    h3 {
-      margin: 0;
-      font-size: 18px;
-      color: #333;
-    }
-
-    .copy-btn {
-      padding: 8px 16px;
-      background-color: #4caf50;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 14px;
-
-      &:hover {
-        background-color: #45a049;
-      }
-    }
-  }
-
-  .code-display {
-    flex: 1;
-    background-color: #f5f5f5;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    padding: 16px;
-    margin: 0;
-    font-family: 'Courier New', monospace;
-    font-size: 14px;
-    line-height: 1.4;
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    overflow: auto;
-    min-height: 300px;
-
-    code {
-      background: none;
-      padding: 0;
-      font-size: inherit;
-    }
-  }
-}
-
 /*------------------------ Code Editor Styles -------------------- */
-.code-editor {
+.codeEditor {
   font-family: 'Consolas', 'Monaco', 'Lucida Console', 'Liberation Mono', 'DejaVu Sans Mono', 'Bitstream Vera Sans Mono', 'Courier New', monospace !important;
   font-size: 13px !important;
   line-height: 1.5 !important;
-  background-color: #f8f9fa !important;
-  border: 1px solid #dee2e6 !important;
-  border-radius: 0.375rem !important;
-  padding: 1rem !important;
-  min-height: 150px !important;
   resize: vertical;
   tab-size: 2;
 
   &:focus {
     outline: none !important;
-    border-color: #74a8c4 !important;
+    border-color: $accentColor !important;
     box-shadow: 0 0 0 0.2rem rgba(116, 168, 196, 0.25) !important;
   }
 
