@@ -1,13 +1,14 @@
 interface Props {
-    title: string;
-    children: React.ReactNode;
+  page?: string;
+  children: React.ReactNode;
 }
 
-const Layout = ({ children, title }: Props) => {
+const Layout = ({ children }: Props) => {
   return (
     <main>
-      <h1>{title}</h1>
-      <div className="inner">{children}</div>
+      <div className="inner">
+        {children}
+      </div>
     </main>
   );
 };

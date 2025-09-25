@@ -1,11 +1,6 @@
 import { useEffect, useState } from "react";
-import { createClient } from "@supabase/supabase-js";
 import type { FrameTemplate } from "../../types/FrameTemplate";
-
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL!,
-  import.meta.env.VITE_SUPABASE_ANON_KEY!
-);
+import { supabase } from "../../lib/supabase";
 
 export function useFrameTemplates() {
   //フレームテンプレートのデータ
@@ -60,23 +55,39 @@ export function useFrameTemplates() {
   return {
     templates,
     error,
+
+    // 手動でデータを再取得
+    refreshTemplates: fetchTemplates,
+
     addTemplate: async (name: string, frame: string) => {
       setError(null);
-      const { error: insertError } = await supabase.from("frame_templates").insert([{ name, frame }]);
+      const { data, error: insertError } = await supabase
+        .from("frame_templates")
+        .insert([{ name, frame }])
+        .select()
+        .single();
       if (insertError) {
         setError(insertError.message);
+        return null;
       }
+      return data?.id || null;
     },
     updateTemplate: async (id: number, name: string, frame: string) => {
       setError(null);
-      const { error: updateError } = await supabase.from("frame_templates").update({ name, frame }).eq("id", id);
+      const { error: updateError } = await supabase
+        .from("frame_templates")
+        .update({ name, frame })
+        .eq("id", id);
       if (updateError) {
         setError(updateError.message);
       }
     },
     deleteTemplate: async (id: number) => {
       setError(null);
-      const { error: deleteError } = await supabase.from("frame_templates").delete().eq("id", id);
+      const { error: deleteError } = await supabase
+        .from("frame_templates")
+        .delete()
+        .eq("id", id);
       if (deleteError) {
         setError(deleteError.message);
       }

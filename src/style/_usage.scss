@@ -9,21 +9,27 @@
 }
 
 @mixin boxShadow($type) {
-    @if $type == base {
+    @if $type ==base {
         box-shadow: -2px -2px 2px #dcdada;
     }
 
-    @else if $type == inset {
+    @else if $type ==inset {
         box-shadow: inset -2px -2px 0 #dcdada;
     }
 }
 
 @mixin marginTop($type) {
-    @if $type == "S" {
+    @if $type =="S" {
         margin-top: 1rem;
     }
 
-    @else if $type == "M" {
+    @else if $type =="M" {
         margin-top: 2rem;
+    }
+}
+
+@each $size in S, M {
+    .mt-#{$size} {
+        @include marginTop($size);
     }
 }

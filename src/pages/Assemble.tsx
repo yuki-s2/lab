@@ -1,386 +1,356 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Layout from "../layout/Layout";
 import { useParts } from "../components/hooks/useParts";
-import { Link } from "react-router-dom";
 import { useFrameTemplates } from "../components/hooks/useFrameTemplates";
-import type { FrameTemplate } from "../types/FrameTemplate";
-import PartsModal from "../components/PartsModal";
+import { useFrameChildren } from "../components/hooks/useFrameChildren";
 import type { Part } from "../types/Part";
-import { DndContext, DragOverlay, closestCenter } from "@dnd-kit/core";
-import {
-  SortableContext,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
-import { SortablePartItem } from "../components/Dnd";
-type UniqueIdentifier = string | number;
-
-// CSS文字列をオブジェクトに変換するヘルパー関数
-const parseStyleString = (styleStr: string): Record<string, string> => {
-  const styles: Record<string, string> = {};
-  if (!styleStr) return styles;
-
-  styleStr.split(";").forEach((style) => {
-    const [property, value] = style.split(":").map((s) => s.trim());
-    if (property && value) {
-      // CSS property をキャメルケースに変換
-      const camelProperty = property.replace(/-([a-z])/g, (match, letter) =>
-        letter.toUpperCase()
-      );
-      styles[camelProperty] = value;
-    }
-  });
-  return styles;
-};
+import PartItem from "../components/PartItem";
+import FrameEditModal from "../components/FrameEditModal";
+import type { FrameChild } from "../types/FrameChild";
+import type { FrameTemplate } from "../types/FrameTemplate";
 
 export default function AssembleView() {
-  const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
   const [localParts, setLocalParts] = useState<Part[]>([]);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [viewMode, setViewMode] = useState<"parts" | "code">("parts");
-  const [generatedHtml, setGeneratedHtml] = useState("");
+  const { templates, deleteTemplate } = useFrameTemplates();
+  const { parts, addPart, deletePart, refreshParts } = useParts();
+  const [viewMode, setViewMode] = useState<"preview" | "code">("preview");
+  const [generatedHtml, setGeneratedHtml] = useState<string>("");
 
-  const { templates } = useFrameTemplates();
-  const { parts, addPart, updatePart, deletePart, updatePartsOrder } =
-    useParts();
+  // partsが更新されたらlocalPartsも同期
+  useEffect(() => {
+    setLocalParts(parts);
+  }, [parts]);
+  const { frameChildren, getChildrenByParent } = useFrameChildren();
 
-  // 外側フレームテンプレートを自動検出（名前が「外側フレーム」で始まるもの）
-  const outerFrameTemplate = templates.find((tpl) =>
-    tpl.name.startsWith("外側フレーム")
+  // 子要素を含むHTMLを生成する関数（メモ化）
+  const renderPartWithChildren = useMemo(() => {
+    return (part: Part): string => {
+      // パーツのテンプレートに紐づく子要素を取得
+      const children = getChildrenByParent(part.frame_id, "template");
+
+      // selected_children_idsで選択された子要素のみをフィルタ
+      const selectedChildren = children.filter((child) =>
+        part.selected_children_ids.includes(child.id)
+      );
+      if (selectedChildren.length === 0) return part.frame;
+
+      const childrenHtml = selectedChildren
+        .map((child) => child.content)
+        .join("\n");
+
+      // 最深層に子要素を挿入（簡易版）
+      const emptyTagPattern =
+        /<(div|p|span|section)[^>]*><\/(div|p|span|section)>/gi;
+      if (emptyTagPattern.test(part.frame)) {
+        return part.frame.replace(
+          emptyTagPattern,
+          (match, _tag, closingTag) => {
+            return match.replace(
+              `</${closingTag}>`,
+              `${childrenHtml}</${closingTag}>`
+            );
+          }
+        );
+      }
+
+      return part.frame + childrenHtml; // フォールバック
+    };
+  }, [frameChildren, getChildrenByParent]);
+
+  // フレーム一覧の状態
+  const [selectedFrame, setSelectedFrame] = useState<FrameTemplate | null>(
+    null
   );
 
-  // LocalStorageからtableスタイルを読み込み
-  const [tableStyles, setTableStyles] = useState({
-    outerTable:
-      "width: 100%; border: 0; cellspacing: 0; cellpadding: 0; background-color: #f4f4f4;",
-    outerTd: "text-align: center;",
-    innerTable:
-      "width: 600px; max-width: 100%; border: 0; cellspacing: 0; cellpadding: 0; background-color: #ffffff;",
-    innerTd: "padding: 0;",
+  // フレーム編集モーダルの状態
+  const [frameEditModal, setFrameEditModal] = useState<{
+    isOpen: boolean;
+    editTarget: {
+      type: "frame" | "child" | "create" | "template";
+      id: number;
+      data: Part | FrameChild | FrameTemplate | null;
+    } | null;
+  }>({
+    isOpen: false,
+    editTarget: null,
   });
 
-  useEffect(() => {
-    const savedStyles = localStorage.getItem("tableStyles");
-    if (savedStyles) {
-      setTableStyles(JSON.parse(savedStyles));
-    }
-  }, []);
-
-  //モーダルの開閉
-  const [showPartsModal, setShowPartsModal] = useState(false);
-  //モーダルに渡すフレーム情報
-  const [selectedFrameTemplateForModal, setSelectedFrameTemplateForModal] =
-    useState<FrameTemplate | null>(null);
-  //編集するパーツ情報
-  const [editingPart, setEditingPart] = useState<Part | null>(null);
-  //パーツ作成用の状態
-  const [newPartName, setNewPartName] = useState("");
-  const [newPartContent, setNewPartContent] = useState("");
-
-  // 初期読み込み時にローカル状態を同期
+  // localPartsをpartsから同期（フラットなリスト）
   useEffect(() => {
     setLocalParts(parts);
   }, [parts]);
 
-  // 保存ボタンの処理（並び替えの結果を保存）
-  const handleSave = async () => {
-    // 並び替えの結果をデータベースに反映
-    const orderedParts = localParts.map((p, index) => ({
-      id: p.id,
-      order_index: index,
-    }));
-
-    await updatePartsOrder(orderedParts);
-    setHasUnsavedChanges(false);
-  };
-
-  // HTMLコード生成機能
+  // 全パーツを結合したHTMLコードを生成
   const generateHtmlCode = () => {
     const htmlParts = localParts
-      .map((part) => {
-        // frameにcontentを挿入
-        if (part.content && part.content.trim()) {
-          return part.frame.replace(/{{content}}/g, part.content);
-        }
-        // contentが空の場合はそのままframeを返す
-        return part.frame;
-      })
+      .map((part) => partsWithChildren[part.id])
       .join("\n");
 
-    // 外側フレームテンプレートがある場合は、それで全体をラップ
-    let finalHtml = htmlParts;
-    if (outerFrameTemplate) {
-      finalHtml = outerFrameTemplate.frame.replace(/{{content}}/g, htmlParts);
-    }
-
-    setGeneratedHtml(finalHtml);
+    setGeneratedHtml(htmlParts);
     setViewMode("code");
   };
 
-  // クリップボードにコピー
-  const copyToClipboard = async () => {
-    try {
-      await navigator.clipboard.writeText(generatedHtml);
-      alert("HTMLコードをクリップボードにコピーしました！");
-    } catch (error) {
-      alert("コピーに失敗しました");
-    }
+  // HTMLコードをクリップボードにコピー
+  const handleCopyHtml = async () => {
+    await navigator.clipboard.writeText(generatedHtml);
+    alert("✅ HTMLコードをクリップボードにコピーしました！");
   };
 
-  // パーツ作成機能
-  const handleCreatePart = async () => {
-    if (
-      !newPartName.trim() ||
-      !newPartContent.trim() ||
-      !selectedFrameTemplateForModal
-    ) {
-      alert("パーツ名、コンテンツ、選択されたフレームが必要です");
-      return;
-    }
+  // 保存ボタンの処理（並び替えとネスト構造の結果を保存）
+  const handleSave = async () => {
+    //HTMLデータをsupabaseに保存
+  };
 
-    await addPart(
-      newPartName,
-      selectedFrameTemplateForModal.frame,
-      selectedFrameTemplateForModal.id,
-      newPartContent
+  // 各パーツの子要素含みHTMLをメモ化
+  const partsWithChildren = useMemo(() => {
+    return localParts.reduce(
+      (acc, part) => {
+        acc[part.id] = renderPartWithChildren(part);
+        return acc;
+      },
+      {} as Record<number, string>
     );
-    setNewPartName("");
-    setNewPartContent("");
-    alert("パーツが作成されました！");
+  }, [localParts, renderPartWithChildren]);
+
+  // フレーム編集モーダルを開く（新しい機能）
+  const handleFrameEdit = (part: Part) => {
+    setFrameEditModal({
+      isOpen: true,
+      editTarget: {
+        type: "frame",
+        id: part.id,
+        data: part,
+      },
+    });
   };
 
-  // フレームリストのボタンクリック
-  const handleFrameClick = (tpl: FrameTemplate) => {
-    setSelectedFrameTemplateForModal(tpl);
-    setShowPartsModal(true);
-    setEditingPart(null);
+  // フレーム一覧からフレームを選択（表示のみ、追加はしない）
+  const handleFrameSelect = (tpl: FrameTemplate) => {
+    setSelectedFrame(tpl);
   };
 
-  // モーダルを閉じる
-  const handleCloseModal = () => {
-    setShowPartsModal(false);
-    setSelectedFrameTemplateForModal(null);
-    setEditingPart(null);
+  // 選択されたフレームをパーツとして追加
+  const handleAddSelectedFrame = async (tpl: FrameTemplate) => {
+    try {
+      // フレームをパーツとして追加（子要素なしで開始）
+      await addPart(
+        tpl.name, // パーツの名前
+        tpl.frame, // HTMLフレーム
+        tpl.id, // 元になったテンプレートのID
+        [] // 空の子要素ID配列で開始
+      );
+
+      // バックアップ：手動でpartsを再取得（リアルタイムが効かない場合の対策）
+      await refreshParts();
+
+      // 追加成功後、選択をクリア
+      setSelectedFrame(null);
+    } catch (error) {
+      console.error("❌ パーツ追加エラー:", error);
+    }
   };
 
-  // パーツ編集開始
-  const handleEditPart = (part: Part) => {
-    const frameOfPart = templates.find((tpl) => tpl.id === part.frame_id);
-    setSelectedFrameTemplateForModal(frameOfPart || null);
-    setEditingPart(part);
-    setShowPartsModal(true);
+  // フレーム作成モーダルを開く（新規作成）
+  const handleFrameAdd = () => {
+    setFrameEditModal({
+      isOpen: true,
+      editTarget: {
+        type: "create",
+        id: 0, // 新規作成時はダミーID
+        data: null,
+      },
+    });
+  };
+
+  //テンプレート削除ボタンクリック時のハンドラ
+  const handleFrameTemplateDelete = (id: number) => {
+    deleteTemplate(id);
+  };
+
+  // 選択されたフレーム（テンプレート）を編集
+  const handleFrameTemplateEdit = (template: FrameTemplate) => {
+    setFrameEditModal({
+      isOpen: true,
+      editTarget: {
+        type: "template", // 新しいタイプを追加
+        id: template.id,
+        data: template,
+      },
+    });
+  };
+
+  // フレーム編集モーダルを閉じる
+  const handleCloseFrameEditModal = () => {
+    setFrameEditModal({
+      isOpen: false,
+      editTarget: null,
+    });
   };
 
   return (
-    <Layout title="組み立てる">
-      <Link className="linkBtn" to="/Generate">
-        ← フレームを作るボタン
-      </Link>
-
-      {/* 保存ボタン */}
-      <div className="saveBtns">
-        <button
-          onClick={handleSave}
-          disabled={!hasUnsavedChanges}
-          className={hasUnsavedChanges ? "is-save" : "is-saved"}
-        >
-          {hasUnsavedChanges ? "保存する" : "保存済み"}
+    <Layout>
+      <div className="btn_wrap">
+        <button className="btn" onClick={() => setViewMode("preview")}>
+          プレビュー
         </button>
-        <button
-          onClick={() => {
-            if (viewMode === "parts") {
-              generateHtmlCode();
-            } else {
-              setViewMode("parts");
-            }
-          }}
-          disabled={localParts.length === 0}
-        >
-          {viewMode === "parts" ? "HTML" : "previewを確認"}
+        <button className="btn" onClick={generateHtmlCode}>
+          HTML
+        </button>
+        <button className="btn" onClick={handleCopyHtml}>
+          コードをコピー
         </button>
       </div>
-
       <div className="contentsWrap">
-        <DndContext
-          collisionDetection={closestCenter}
-          onDragEnd={(event) => {
-            const { active, over } = event;
-            if (!over) return;
-
-            const activeId = active.id.toString();
-            const overId = over.id.toString();
-
-            // パーツ同士での並び替え
-            if (activeId.startsWith("part-") && overId.startsWith("part-")) {
-              const activePartId = parseInt(activeId.replace("part-", ""));
-              const overPartId = parseInt(overId.replace("part-", ""));
-
-              if (activePartId !== overPartId) {
-                const oldIndex = localParts.findIndex(
-                  (p) => p.id === activePartId
-                );
-                const newIndex = localParts.findIndex(
-                  (p) => p.id === overPartId
-                );
-
-                if (oldIndex !== -1 && newIndex !== -1) {
-                  const newParts = [...localParts];
-                  const [movedPart] = newParts.splice(oldIndex, 1);
-                  newParts.splice(newIndex, 0, movedPart);
-                  setLocalParts(newParts);
-                  setHasUnsavedChanges(true);
-                }
-              }
-            }
-            setActiveId(null);
-          }}
-          onDragStart={(event) => setActiveId(event.active.id.toString())}
-        >
-          <div className="contents is-works">
-            {/* 外側フレーム適用状態を表示 */}
-            {outerFrameTemplate && (
-              <div>外側フレーム適用中: {outerFrameTemplate.name}</div>
-            )}
-
-            {/* HTMLメール風のコンテナ */}
-            <div
-              style={{
-                margin: 0,
-                padding: 0,
-                backgroundColor: "#f4f4f4",
-                fontFamily:
-                  "'Hiragino Sans', 'ヒラギノ角ゴ ProN', 'Meiryo', 'メイリオ', sans-serif",
-              }}
-            >
-              {/* table構造をdivに変更してDnDエラーを解決 */}
-              <div
-                style={
-                  {
-                    width: "100%",
-                    backgroundColor: "#f4f4f4",
-                    display: "table",
-                    ...parseStyleString(tableStyles.outerTable),
-                  } as any
-                }
-              >
+        <div className="contents is-works">
+          {viewMode === "preview" ? (
+            /* プレビューモード: パーツリスト表示 */
+            localParts.length > 0 ? (
+              localParts.map((part) => (
                 <div
-                  style={
-                    {
-                      display: "table-cell",
-                      textAlign: "center",
-                      ...parseStyleString(tableStyles.outerTd),
-                    } as any
-                  }
+                  className={`part_Wrap ${part.selected_children_ids.length > 0 ? "" : "is-empty"}`}
+                  key={part.id}
                 >
-                  <div
-                    style={
-                      {
-                        width: "600px",
-                        maxWidth: "100%",
-                        backgroundColor: "#ffffff",
-                        margin: "0 auto",
-                        ...parseStyleString(tableStyles.innerTable),
-                      } as any
-                    }
-                  >
-                    <div
-                      style={
-                        {
-                          padding: 0,
-                          ...parseStyleString(tableStyles.innerTd),
-                        } as any
-                      }
+                  <PartItem
+                    part={part}
+                    customHtml={partsWithChildren[part.id]}
+                  />
+                  {/* 編集・削除ボタン */}
+                  <div className="partBtns">
+                    <button
+                      className="is-edit"
+                      onClick={() => handleFrameEdit(part)}
+                      title="編集"
                     >
-                      {viewMode === "parts" ? (
-                        // 既存のパーツ表示（DnD機能付き）
-                        <SortableContext
-                          items={localParts.map((p) => `part-${p.id}`)}
-                          strategy={verticalListSortingStrategy}
-                        >
-                          {/* パーツ一覧 */}
-                          {localParts.length > 0 ? (
-                            localParts.map((part) => (
-                              <SortablePartItem
-                                key={part.id}
-                                part={part}
-                                onEdit={() => handleEditPart(part)}
-                                onDelete={async () => {
-                                  // データベースから削除
-                                  await deletePart(part.id);
-
-                                  // ローカル状態からも削除（useEffectで同期されるが、即座に反映するため）
-                                  setLocalParts((prev) =>
-                                    prev.filter((p) => p.id !== part.id)
-                                  );
-                                }}
-                              />
-                            ))
-                          ) : (
-                            <div className="drop-placeholder">
-                              パーツをドラッグして並べてください
-                            </div>
-                          )}
-                        </SortableContext>
-                      ) : (
-                        // HTMLコード表示
-                        <div className="code-view">
-                          <div className="code-header">
-                            <button
-                              className="copy-btn"
-                              onClick={copyToClipboard}
-                            >
-                              📋 copy
-                            </button>
-                          </div>
-                          <pre className="code-display">
-                            <code>{generatedHtml}</code>
-                          </pre>
-                        </div>
-                      )}
-                    </div>
+                      <span>|||</span>
+                    </button>
+                    <button
+                      onClick={async () => {
+                        if (
+                          window.confirm(`「${part.name}」を削除しますか？`)
+                        ) {
+                          await deletePart(part.id);
+                          setLocalParts((prev) =>
+                            prev.filter((p) => p.id !== part.id)
+                          );
+                        }
+                      }}
+                      title="削除"
+                    >
+                      ×
+                    </button>
                   </div>
                 </div>
-              </div>
-            </div>
-          </div>
-          <div className="contents">
-            {/* フレーム一覧ここから */}
-            <div className="frameList">
-              {templates.map((tpl) => (
-                <button
-                  className={`frameList_item ${
-                    selectedFrameTemplateForModal?.id === tpl.id
-                      ? "is-active"
-                      : ""
-                  }`}
-                  key={tpl.id}
-                  onClick={() => handleFrameClick(tpl)}
+              ))
+            ) : (
+              <table
+                width="100%"
+                cellPadding="0"
+                cellSpacing="0"
+                style={{
+                  border: "1px solid #ccc",
+                  borderRadius: "4px",
+                  textAlign: "center",
+                  backgroundColor: "#f9f9f9",
+                }}
+              >
+                <tbody>
+                  <tr>
+                    <td style={{ padding: "20px", color: "#666" }}>
+                      パーツが追加されていません
+                      <br />
+                      フレームを選択してパーツを作成してください
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            )
+          ) : (
+            /* HTMLコードモード: コード表示 */
+            <div className="codeView">
+              {generatedHtml ? (
+                <pre
+                  style={{
+                    background: "#f5f5f5",
+                    padding: "20px",
+                    border: "1px solid #ddd",
+                    borderRadius: "4px",
+                    overflow: "auto",
+                    fontSize: "14px",
+                    whiteSpace: "pre-wrap",
+                  }}
                 >
-                  <div>{tpl.name}</div>
-                </button>
-              ))}
+                  {generatedHtml}
+                </pre>
+              ) : (
+                <div
+                  style={{
+                    padding: "20px",
+                    textAlign: "center",
+                    color: "#666",
+                    border: "1px solid #ddd",
+                    borderRadius: "4px",
+                    background: "#f9f9f9",
+                  }}
+                >
+                  「HTML」ボタンを押してコードを生成してください
+                </div>
+              )}
             </div>
-            {/* フレーム一覧ここまで */}
-
-            {/* PartsModal コンポーネント */}
-            <PartsModal
-              isOpen={showPartsModal}
-              onClose={handleCloseModal}
-              selectedFrameTemplate={selectedFrameTemplateForModal}
-              addPart={addPart}
-              updatePart={updatePart}
-              editingPart={editingPart}
-            />
-          </div>
-
-          {/* ドラッグ中のパーツの名前 */}
-          <DragOverlay>
-            {activeId ? (
-              <div className="drag-preview">
-                {localParts.find((p) => `part-${p.id}` === activeId)?.name}
+          )}
+        </div>
+        <div className="contents">
+          <button className="btn is-primary" onClick={handleFrameAdd}>
+            フレームを作成する
+          </button>
+          {selectedFrame && (
+            <>
+              <p className="mt-S">選択したフレームを...</p>
+              <div className="btn_wrap">
+                <button
+                  className="btn"
+                  onClick={() => handleAddSelectedFrame(selectedFrame)}
+                >
+                  追加
+                </button>
+                <button
+                  className="btn"
+                  onClick={() => handleFrameTemplateEdit(selectedFrame)}
+                >
+                  編集
+                </button>
+                <button
+                  className="btn"
+                  onClick={() => handleFrameTemplateDelete(selectedFrame.id)}
+                >
+                  削除
+                </button>
               </div>
-            ) : null}
-          </DragOverlay>
-        </DndContext>
+            </>
+          )}
+
+          {/* フレーム一覧ここから */}
+          <div className="frameList">
+            {templates.map((tpl) => (
+              <button
+                className={`frameList_item ${
+                  selectedFrame?.id === tpl.id ? "is-active" : ""
+                }`}
+                key={tpl.id}
+                onClick={() => handleFrameSelect(tpl)}
+              >
+                <div>{tpl.name}</div>
+              </button>
+            ))}
+          </div>
+          {/* フレーム一覧ここまで */}
+
+          {/* フレーム編集モーダル */}
+          <FrameEditModal
+            isOpen={frameEditModal.isOpen}
+            onClose={handleCloseFrameEditModal}
+            editTarget={frameEditModal.editTarget}
+          />
+        </div>
       </div>
     </Layout>
   );

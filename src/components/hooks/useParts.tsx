@@ -1,12 +1,6 @@
 import { useEffect, useState } from "react";
-import { createClient } from "@supabase/supabase-js";
 import type { Part } from "../../types/Part";
-import { insertContentToDeepestElement } from "../../lib/insertContentToDeepestElement";
-
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL!,
-  import.meta.env.VITE_SUPABASE_ANON_KEY!
-);
+import { supabase } from "../../lib/supabase";
 
 export function useParts() {
   const [parts, setParts] = useState<Part[]>([]);
@@ -70,14 +64,16 @@ export function useParts() {
     loading,
     error,
 
-    // パーツを追加
+    // 手動でデータを再取得
+    refreshParts: fetchParts,
+
+    // パーツを追加‹
     addPart: async (
       name: string,
       frame: string,
       frameId: number,
-      content: string
+      selectedChildrenIds: number[] = []
     ): Promise<Part | null> => {
-      const processedFrame = insertContentToDeepestElement(frame, content);
       const maxOrderIndex =
         parts.length > 0 ? Math.max(...parts.map((p) => p.order_index)) : -1;
 
@@ -85,18 +81,19 @@ export function useParts() {
         .toString(36)
         .substr(2, 9)}`;
 
+      const insertData = {
+        name: name.trim(),
+        frame: frame, // フレームはそのまま保存
+        frame_id: frameId,
+        selected_children_ids: selectedChildrenIds, // 選択された子要素のID配列
+        //パーツを一番最後の位置に配置するため存在するパーツの中で最大の order_index を取得
+        order_index: maxOrderIndex + 1,
+        uid: uid,
+      };
+
       const { data, error: insertError } = await supabase
         .from("parts")
-        .insert([
-          {
-            name: name.trim(),
-            frame: processedFrame,
-            frame_id: frameId,
-            content: content.trim() || null,
-            order_index: maxOrderIndex + 1,
-            uid: uid,
-          },
-        ])
+        .insert([insertData])
         .select();
 
       if (insertError) {
@@ -108,12 +105,30 @@ export function useParts() {
     },
 
     // パーツを更新
-    updatePart: async (id: number, name: string, content: string) => {
+    updatePart: async (
+      id: number,
+      updates: {
+        name?: string;
+        selected_children_ids?: number[];
+      }
+    ) => {
       setError(null);
+
+      const updateData: any = {};
+
+      if (updates.name !== undefined) {
+        updateData.name = updates.name;
+      }
+
+      if (updates.selected_children_ids !== undefined) {
+        updateData.selected_children_ids = updates.selected_children_ids;
+      }
+
       const { error: updateError } = await supabase
         .from("parts")
-        .update({ name, content })
+        .update(updateData)
         .eq("id", id);
+
       if (updateError) {
         setError(updateError.message);
       }
@@ -131,16 +146,27 @@ export function useParts() {
       }
     },
 
-    // パーツの順番を更新
+    // パーツの順番とネスト構造を更新
     updatePartsOrder: async (
-      orderedParts: { id: number; order_index: number }[]
+      orderedParts: {
+        id: number;
+        order_index: number;
+        parent_id?: number | null;
+      }[]
     ) => {
       setError(null);
 
-      for (const { id, order_index } of orderedParts) {
+      for (const { id, order_index, parent_id } of orderedParts) {
+        const updateData: any = { order_index };
+
+        // parent_idが指定されている場合は更新に含める
+        if (parent_id !== undefined) {
+          updateData.parent_id = parent_id;
+        }
+
         const { error: updateError } = await supabase
           .from("parts")
-          .update({ order_index })
+          .update(updateData)
           .eq("id", id);
 
         if (updateError) {
@@ -160,6 +186,37 @@ export function useParts() {
 
       if (deleteError) {
         setError(deleteError.message);
+      }
+    },
+
+    // 同じframe_idを持つパーツのframeを一括更新
+    updatePartsByFrameId: async (frameId: number, newFrame: string) => {
+      setError(null);
+
+      // 同じframe_idを持つパーツを取得
+      const { data: targetParts, error: fetchError } = await supabase
+        .from("parts")
+        .select("*")
+        .eq("frame_id", frameId);
+
+      if (fetchError) {
+        setError(fetchError.message);
+        return;
+      }
+
+      if (targetParts && targetParts.length > 0) {
+        // 各パーツのframeを新しいテンプレートで更新
+        for (const part of targetParts) {
+          const { error: updateError } = await supabase
+            .from("parts")
+            .update({ frame: newFrame })
+            .eq("id", part.id);
+
+          if (updateError) {
+            setError(updateError.message);
+            return;
+          }
+        }
       }
     },
   };
