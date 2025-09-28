@@ -8,6 +8,7 @@ import PartItem from "../components/PartItem";
 import FrameEditModal from "../components/FrameEditModal";
 import type { FrameChild } from "../types/FrameChild";
 import type { FrameTemplate } from "../types/FrameTemplate";
+import { insertContentToDeepestElement } from "../lib/insertContentToDeepestElement";
 
 export default function AssembleView() {
   const [localParts, setLocalParts] = useState<Part[]>([]);
@@ -38,22 +39,8 @@ export default function AssembleView() {
         .map((child) => child.content)
         .join("\n");
 
-      // 最深層に子要素を挿入（簡易版）
-      const emptyTagPattern =
-        /<(div|p|span|section)[^>]*><\/(div|p|span|section)>/gi;
-      if (emptyTagPattern.test(part.frame)) {
-        return part.frame.replace(
-          emptyTagPattern,
-          (match, _tag, closingTag) => {
-            return match.replace(
-              `</${closingTag}>`,
-              `${childrenHtml}</${closingTag}>`
-            );
-          }
-        );
-      }
-
-      return part.frame + childrenHtml; // フォールバック
+      // 最深層に子要素を挿入（正しい関数を使用）
+      return insertContentToDeepestElement(part.frame, childrenHtml);
     };
   }, [frameChildren, getChildrenByParent]);
 
@@ -94,11 +81,6 @@ export default function AssembleView() {
   const handleCopyHtml = async () => {
     await navigator.clipboard.writeText(generatedHtml);
     alert("✅ HTMLコードをクリップボードにコピーしました！");
-  };
-
-  // 保存ボタンの処理（並び替えとネスト構造の結果を保存）
-  const handleSave = async () => {
-    //HTMLデータをsupabaseに保存
   };
 
   // 各パーツの子要素含みHTMLをメモ化

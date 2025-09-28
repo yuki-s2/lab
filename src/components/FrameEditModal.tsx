@@ -10,6 +10,7 @@ import {
 } from "../components/hooks/format";
 import { CreateChildModal } from "./CreateChildModal";
 import type { FrameTemplate } from "../types/FrameTemplate";
+import { insertContentToDeepestElement } from "../lib/insertContentToDeepestElement";
 
 interface Props {
   isOpen: boolean;
@@ -32,9 +33,6 @@ export default function FrameEditModal({ isOpen, onClose, editTarget }: Props) {
   const { addTemplate, updateTemplate } = useFrameTemplates();
   const { addPart, updatePart, refreshParts, updatePartsByFrameId } =
     useParts();
-  const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(
-    null
-  );
   const [templateName, setTemplateName] = useState("");
   const [templateFrame, setTemplateFrame] = useState("");
   const [editId, setEditId] = useState<number | null>(null);
@@ -85,7 +83,6 @@ export default function FrameEditModal({ isOpen, onClose, editTarget }: Props) {
     setTemplateName("");
     setTemplateFrame("");
     setEditId(null);
-    setSelectedTemplateId(null);
     setAutoAddToWorkspace(false);
   };
 
@@ -158,23 +155,8 @@ export default function FrameEditModal({ isOpen, onClose, editTarget }: Props) {
 
     const childrenHtml = childElements.map((child) => child.content).join("\n");
 
-    // 最深層に子要素を挿入
-    return insertIntoDeepestElement(baseContent, childrenHtml);
-  };
-
-  // 簡易的な最深層挿入関数（後で改良可能）
-  const insertIntoDeepestElement = (html: string, content: string): string => {
-    // 空のdivやpタグを探して挿入
-    const emptyTagPattern =
-      /<(div|p|span|section)[^>]*><\/(div|p|span|section)>/gi;
-    if (emptyTagPattern.test(html)) {
-      return html.replace(emptyTagPattern, (match, _tag, closingTag) => {
-        return match.replace(`</${closingTag}>`, `${content}</${closingTag}>`);
-      });
-    }
-
-    // 空のタグがない場合は末尾に追加
-    return html + content;
+    // 最深層に子要素を挿入（正しい関数を使用）
+    return insertContentToDeepestElement(baseContent, childrenHtml);
   };
 
   // 選択された子要素のみを取得
